@@ -1,7 +1,7 @@
 import React, { useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink, Settings, Check } from 'lucide-react';
+import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink, Settings, Check, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, cn, Skeleton } from '@/lib/ui';
 import { toast } from '@/lib/ui/components/use-toast';
 import type { CalendarEventData } from '@/modules/shared';
@@ -13,12 +13,36 @@ const MONTH_NAMES = ['يناير', 'فبراير', 'مارس', 'أبريل', 'م
 const FONT = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
 const MAX_VISIBLE_INVITEES = 5;
 
+const AVATAR_COLORS = [
+  'bg-primary/15 text-primary',
+  'bg-amber-500/15 text-amber-600',
+  'bg-violet-500/15 text-violet-600',
+  'bg-rose-500/15 text-rose-600',
+  'bg-cyan-500/15 text-cyan-600',
+];
+
 function formatDetailDate(date: Date): string {
-  return `${DAY_NAMES[date.getDay()]} ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
+  return `${DAY_NAMES[date.getDay()]} ${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}م`;
 }
 
 function formatExactTime(date: Date): string {
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+}
+
+function computeDurationMinutes(start: string, end: string): number | null {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  if (sh == null || sm == null || eh == null || em == null) return null;
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  return diff > 0 ? diff : null;
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} دقيقة`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (m === 0) return h === 1 ? 'ساعة' : `${h} ساعات`;
+  return `${h} س ${m} د`;
 }
 
 function extractDomain(url: string): string {
@@ -72,7 +96,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
     const meeting = meetingDetail as (MeetingApiResponse & { meeting_link?: string | null; meeting_url?: string; meeting_location?: string | null }) | undefined;
     const fromApi = meeting && !isLoading;
 
-    // Parse dates without timezone conversion
     const scheduledStartDate = fromApi && meeting.scheduled_start
       ? (parseDateFromIso(meeting.scheduled_start) ?? event.date)
       : event.date;
@@ -101,6 +124,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
     const requiresProtocol = fromApi ? Boolean((meeting as any).requires_protocol) : false;
     const isDataComplete = fromApi ? Boolean((meeting as any).is_data_complete ?? true) : true;
 
+    const durationMin = startTime && endTime ? computeDurationMinutes(startTime, endTime) : null;
+
     return {
       title: (fromApi ? meeting.meeting_title : event.title) || event.meeting_title || 'اجتماع',
       is_internal: event.is_internal,
@@ -113,6 +138,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
       date: scheduledStartDate,
       startTime,
       endTime,
+      durationMin,
       locationOrLink: locationText,
       isLink: typeof locationText === 'string' && locationText.startsWith('http'),
       invitees: inviteesList,
@@ -124,21 +150,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
 
   if (!event) return null;
 
-  const InfoRow: React.FC<{ icon: React.ReactNode; children: React.ReactNode; border?: boolean }> = ({
-    icon, children, border = true,
-  }) => (
-    <div className={cn('flex items-center gap-3 py-2.5', border && 'border-b border-border/20')}>
-      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-        {icon}
-      </div>
-      {children}
-    </div>
-  );
-
   return (
     <Dialog open={!!event} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-w-[520px] w-[95vw] max-h-[85vh] p-0 rounded-2xl border border-border/60 shadow-2xl [&>button]:hidden overflow-hidden"
+        className="max-w-[520px] w-[95vw] max-h-[85vh] p-0 rounded-2xl border border-border/60 shadow-2xl [&>button]:hidden overflow-hidden backdrop-blur-sm"
         dir="rtl"
       >
         {isLoading && (
@@ -152,17 +167,20 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
 
         {!isLoading && display && (
           <div className="flex flex-col" style={FONT}>
+            {/* Gradient accent bar */}
+            <div className="h-[3px] w-full bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA]" />
+
             {/* Header */}
-            <div className="flex items-start justify-between px-5 pt-5 pb-4">
-              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <div className="flex items-start justify-between px-5 pt-4 pb-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <Calendar className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <h3 className="text-foreground font-bold text-[16px] leading-6 truncate">{display.title}</h3>
+                <div className="flex flex-col min-w-0 gap-1">
+                  <h3 className="text-foreground font-bold text-[16px] leading-6 line-clamp-2">{display.title}</h3>
                   {display.is_internal !== undefined && (
                     <span className={cn(
-                      'text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit mt-0.5',
+                      'text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit',
                       display.is_internal
                         ? 'bg-primary/10 text-primary'
                         : 'bg-amber-500/10 text-amber-600',
@@ -180,15 +198,20 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
               </button>
             </div>
 
+            {/* Divider */}
+            <div className="mx-5 h-px bg-border/30" />
+
             {/* Body — scrollable */}
-            <div className="flex flex-col px-5 pb-2 overflow-y-auto max-h-[calc(85vh-180px)] gap-4">
+            <div className="flex flex-col px-5 py-4 overflow-y-auto max-h-[calc(85vh-180px)] gap-5">
               {/* Details card */}
-              <div className="rounded-xl border border-border/40 bg-muted/15 divide-y divide-border/20">
+              <div className="rounded-xl border border-border/40 bg-muted/10 divide-y divide-border/20 overflow-hidden">
                 {/* Organizer */}
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-2.5 shrink-0">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <User className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-primary">
+                        {getInitials(display.organizerName || display.organizerEmail || '?')}
+                      </span>
                     </div>
                     <span className="text-[12px] font-semibold text-muted-foreground">المنظم</span>
                   </div>
@@ -225,11 +248,18 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     </div>
                     <span className="text-[12px] font-semibold text-muted-foreground">الوقت</span>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[13px] font-medium text-foreground" dir="ltr">
-                    <span>{display.startTime}</span>
-                    <span className="text-muted-foreground">–</span>
-                    <span>{display.endTime}</span>
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 text-[13px] font-medium text-foreground" dir="ltr">
+                      <span>{display.startTime}</span>
+                      <span className="text-muted-foreground">–</span>
+                      <span>{display.endTime}</span>
+                    </span>
+                    {display.durationMin && (
+                      <span className="text-[10px] font-medium text-primary bg-primary/8 rounded-full px-2 py-0.5">
+                        {formatDuration(display.durationMin)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Location / Link */}
@@ -243,10 +273,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   <div className="flex items-center gap-1.5 min-w-0">
                     {display.locationOrLink ? (
                       display.isLink ? (
-                        <>
-                          <span className="text-[13px] font-medium text-foreground truncate max-w-[180px]">
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={display.locationOrLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/8 text-primary text-[11px] font-semibold hover:bg-primary/15 transition-colors"
+                          >
+                            <Video className="w-3 h-3" />
                             {extractDomain(display.locationOrLink)}
-                          </span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                          </a>
                           <button
                             onClick={() => handleCopyLink(display.locationOrLink)}
                             className="w-6 h-6 rounded-md hover:bg-accent flex items-center justify-center transition-colors shrink-0"
@@ -254,16 +291,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                           >
                             <Copy className="w-3 h-3 text-muted-foreground" />
                           </button>
-                          <a
-                            href={display.locationOrLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-6 h-6 rounded-md hover:bg-accent flex items-center justify-center transition-colors shrink-0"
-                            title="فتح الرابط"
-                          >
-                            <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                          </a>
-                        </>
+                        </div>
                       ) : (
                         <span className="text-[13px] font-medium text-foreground truncate max-w-[260px]">
                           {display.locationOrLink}
@@ -277,87 +305,88 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
               </div>
 
               {/* Invitees */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-                    <span className="text-[13px] font-semibold text-foreground">المدعوون</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-border/25" />
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                    <span className="text-[12px] font-semibold text-muted-foreground">المدعوون</span>
+                    <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                      {display.invitees.length}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground bg-muted rounded-full px-2.5 py-0.5">
-                    {display.invitees.length}
-                  </span>
+                  <div className="h-px flex-1 bg-border/25" />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  {display.invitees.length > 0 ? (
-                    <>
+
+                {display.invitees.length > 0 ? (
+                  <div className="flex items-center gap-1">
+                    {/* Avatar stack */}
+                    <div className="flex -space-x-2 rtl:space-x-reverse">
                       {display.invitees.slice(0, MAX_VISIBLE_INVITEES).map((a, idx) => (
-                        <div key={`${a.name}-${idx}`} className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border/30 bg-muted/20">
-                          <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-bold">{getInitials(a.name || a.email || '?')}</span>
-                          </div>
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-[12px] font-medium text-foreground truncate">
-                              {a.name || a.email || '—'}
-                            </span>
-                            {a.name && a.email && (
-                              <span className="text-[10px] text-muted-foreground truncate">{a.email}</span>
-                            )}
-                          </div>
+                        <div
+                          key={`${a.name}-${idx}`}
+                          className={cn(
+                            'w-8 h-8 rounded-full flex items-center justify-center ring-2 ring-background shrink-0',
+                            AVATAR_COLORS[idx % AVATAR_COLORS.length],
+                          )}
+                          title={a.name || a.email || '—'}
+                        >
+                          <span className="text-[10px] font-bold">{getInitials(a.name || a.email || '?')}</span>
                         </div>
                       ))}
                       {display.invitees.length > MAX_VISIBLE_INVITEES && (
-                        <span className="text-[11px] text-muted-foreground text-center py-1">
-                          +{display.invitees.length - MAX_VISIBLE_INVITEES} آخرين
-                        </span>
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center ring-2 ring-background bg-muted text-muted-foreground shrink-0"
+                          title={`${display.invitees.length - MAX_VISIBLE_INVITEES} آخرين`}
+                        >
+                          <span className="text-[9px] font-bold">+{display.invitees.length - MAX_VISIBLE_INVITEES}</span>
+                        </div>
                       )}
-                    </>
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground py-1">لا يوجد مدعوون</span>
-                  )}
-                </div>
+                    </div>
+                    {/* Names preview */}
+                    <div className="flex flex-col mr-2 min-w-0">
+                      <span className="text-[11px] font-medium text-foreground truncate">
+                        {display.invitees.slice(0, 2).map(a => a.name || a.email).join('، ')}
+                        {display.invitees.length > 2 && ` و ${display.invitees.length - 2} آخرين`}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground py-1">لا يوجد مدعوون</span>
+                )}
               </div>
 
               {/* Scheduling Settings */}
               {display.meetingId && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-                    <span className="text-[13px] font-semibold text-foreground">إعدادات الجدولة</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className={cn(
-                      'flex items-center gap-3 p-3 rounded-xl border',
-                      display.requiresProtocol
-                        ? 'border-primary/30 bg-primary/5'
-                        : 'border-border/40 bg-muted/10'
-                    )}>
-                      <div className={cn(
-                        'w-5 h-5 rounded-md border flex items-center justify-center shrink-0',
-                        display.requiresProtocol ? 'bg-primary border-primary' : 'border-border/60'
-                      )}>
-                        {display.requiresProtocol && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[12px] font-semibold text-foreground">مبدئي</span>
-                        <span className="text-[10px] text-muted-foreground">يتطلب بروتوكول</span>
-                      </div>
+                    <div className="h-px flex-1 bg-border/25" />
+                    <div className="flex items-center gap-1.5">
+                      <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                      <span className="text-[12px] font-semibold text-muted-foreground">إعدادات الجدولة</span>
                     </div>
+                    <div className="h-px flex-1 bg-border/25" />
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Preliminary chip */}
                     <div className={cn(
-                      'flex items-center gap-3 p-3 rounded-xl border',
-                      display.isDataComplete
-                        ? 'border-primary/30 bg-primary/5'
-                        : 'border-border/40 bg-muted/10'
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors',
+                      display.requiresProtocol
+                        ? 'bg-primary/10 text-primary border border-primary/25'
+                        : 'bg-muted/40 text-muted-foreground border border-border/40',
                     )}>
-                      <div className={cn(
-                        'w-5 h-5 rounded-md border flex items-center justify-center shrink-0',
-                        display.isDataComplete ? 'bg-primary border-primary' : 'border-border/60'
-                      )}>
-                        {display.isDataComplete && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[12px] font-semibold text-foreground">البيانات مكتملة</span>
-                        <span className="text-[10px] text-muted-foreground">جميع البيانات جاهزة</span>
-                      </div>
+                      {display.requiresProtocol && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                      مبدئي
+                    </div>
+                    {/* Data complete chip */}
+                    <div className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors',
+                      display.isDataComplete
+                        ? 'bg-primary/10 text-primary border border-primary/25'
+                        : 'bg-muted/40 text-muted-foreground border border-border/40',
+                    )}>
+                      {display.isDataComplete && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                      البيانات مكتملة
                     </div>
                   </div>
                 </div>
@@ -365,12 +394,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
             </div>
 
             {/* Actions footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border/30 bg-muted/10">
+            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-border/30 bg-muted/5">
               {display.meetingId && onEdit && (
                 <button
                   type="button"
                   onClick={() => onEdit(display.meetingId!)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/60 text-[12px] font-semibold text-foreground bg-background hover:bg-muted/50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   تعديل
@@ -383,16 +412,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   onClose();
                   navigate(`/meeting/${id}`);
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/60 text-[12px] font-semibold text-foreground bg-background hover:bg-muted/50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/60 text-[12px] font-semibold text-foreground bg-background hover:bg-muted/50 transition-all"
               >
                 عرض التفاصيل
+                <ArrowLeft className="w-3.5 h-3.5" />
               </button>
               {display.isLink && (
                 <a
                   href={display.locationOrLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold shadow-sm transition-colors hover:bg-primary/90"
+                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] text-white text-[12px] font-semibold shadow-sm transition-all hover:scale-[1.03] active:scale-[0.97] hover:shadow-md"
                 >
                   <Video className="w-3.5 h-3.5" />
                   انضم للاجتماع
