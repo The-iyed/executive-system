@@ -62,6 +62,7 @@ export function useSchedulerStep1Form(initialValues?: Partial<SchedulerStep1Valu
 
   const visibility = useMemo(() => ({
     previous_meeting_id: isFollowUp,
+    meeting_owner: watched.is_on_behalf_of === BOOL.TRUE,
     urgent_reason: watched.is_urgent === BOOL.TRUE,
     meeting_location: [AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(watched.meeting_channel),
     meeting_location_custom: watched.meeting_location === MeetingLocation.OTHER,
@@ -70,11 +71,12 @@ export function useSchedulerStep1Form(initialValues?: Partial<SchedulerStep1Valu
     deadline: watched.meeting_classification === MeetingClassification.GOVERNMENT_CENTER_TOPICS,
     meeting_classification_type: watched.meeting_classification === MeetingClassification.BUSINESS,
     meetingSubCategory: [MeetingClassification.COUNCILS_AND_COMMITTEES_EXTERNAL, MeetingClassification.COUNCILS_AND_COMMITTEES_INTERNAL].includes(watched.meeting_classification as MeetingClassification),
-  }), [watched.meeting_nature, watched.meeting_channel, watched.meeting_location, watched.is_urgent, watched.meeting_classification]);
+  }), [watched.meeting_nature, watched.meeting_channel, watched.meeting_location, watched.is_urgent, watched.meeting_classification, watched.is_on_behalf_of]);
 
   // Clean up hidden field values when visibility toggles off
   const SCHEDULER_FIELD_RESET_MAP = useMemo(() => ({
     previous_meeting_id: ["previous_meeting_id", { name: "group_id", resetValue: null }, { name: "prev_ext_original_title", resetValue: null }, { name: "prev_ext_meeting_title", resetValue: null }],
+    meeting_owner: [{ name: "meeting_owner", resetValue: null }],
     urgent_reason: ["urgent_reason"],
     meeting_location: ["meeting_location", "meeting_location_custom"],
     meeting_location_custom: ["meeting_location_custom"],
