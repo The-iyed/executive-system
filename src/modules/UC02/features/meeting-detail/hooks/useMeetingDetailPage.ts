@@ -41,7 +41,7 @@ export interface ScheduleFormState {
   scheduled_at: string;
   scheduled_end_at: string;
   meeting_channel: 'PHYSICAL' | 'PHYSICAL_LOCATION_1' | 'PHYSICAL_LOCATION_2' | 'PHYSICAL_LOCATION_3' | 'VIRTUAL' | 'HYBRID';
-  requires_protocol: boolean;
+  is_preliminary_booking: boolean;
   protocol_type: string | null;
   protocol_type_text: string;
   is_data_complete: boolean;
