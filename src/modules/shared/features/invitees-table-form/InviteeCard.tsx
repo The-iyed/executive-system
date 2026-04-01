@@ -122,6 +122,7 @@ const InviteeCard = ({ invitee, columns }: InviteeCardProps) => {
   const hasAccess = !!invitee.access_permission;
   const isConsultant = !!invitee.is_consultant;
   const isMeetingOwner = !!invitee.meeting_owner;
+  const isPresenceRequired = !!invitee.is_presence_required;
 
   return (
     <TooltipProvider delayDuration={200}>
