@@ -158,7 +158,7 @@ export function DateTimePickerField({
         side="bottom"
         avoidCollisions={true}
         collisionPadding={16}
-        sticky="always"
+        sticky="partial"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="flex flex-col max-h-[min(480px,calc(100vh-2rem))] overflow-y-auto overscroll-contain">
