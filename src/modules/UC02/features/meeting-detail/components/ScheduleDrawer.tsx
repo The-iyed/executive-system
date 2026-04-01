@@ -10,7 +10,7 @@ interface ScheduleForm {
   scheduled_at: string;
   scheduled_end_at: string;
   meeting_channel: string;
-  requires_protocol: boolean;
+  is_preliminary_booking: boolean;
   is_data_complete: boolean;
   notes: string;
 }
