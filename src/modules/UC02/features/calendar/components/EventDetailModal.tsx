@@ -374,6 +374,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     </div>
                   </div>
                 )}
+              </div>
             </div>
 
             {/* Actions footer */}
