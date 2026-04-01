@@ -9,7 +9,7 @@ import {
   ConfidentialityField, ClassificationTypeField, SubCategoryField,
   RelatedTopicField, DeadlineField, NoteField, MeetingManagerField, MeetingOwnerField,
   MeetingNatureField, PreviousMeetingField, RequiresProtocolField,
-  RelatedDirectiveField, AgendaSection,
+  RelatedDirectiveField, AgendaSection, OnBehalfField,
 } from "../shared";
 import { BOOL } from "../shared/types/enums";
 import type { SchedulerStep1Values } from "./schema";
