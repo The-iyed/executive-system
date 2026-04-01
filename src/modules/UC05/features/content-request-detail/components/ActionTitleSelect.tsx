@@ -139,21 +139,32 @@ export function ActionTitleSelect({ value, onChange, placeholder = 'ابحث و�
 
   return (
     <div ref={containerRef} className="relative w-full">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen(!open)}
-        className={cn(
-          'flex min-h-[44px] w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm transition-all',
-          'hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary',
-          disabled && 'opacity-50 cursor-not-allowed',
-        )}
-      >
-        <span className={cn('text-right flex-1 leading-relaxed', !value && 'text-muted-foreground')}>
-          {value || placeholder}
-        </span>
-        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ms-2" />
-      </button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => setOpen(!open)}
+              className={cn(
+                'flex h-[44px] w-full max-w-[300px] items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm transition-all',
+                'hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary',
+                disabled && 'opacity-50 cursor-not-allowed',
+              )}
+            >
+              <span className={cn('text-right flex-1 truncate leading-relaxed', !value && 'text-muted-foreground')}>
+                {value || placeholder}
+              </span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ms-2" />
+            </button>
+          </TooltipTrigger>
+          {value && (
+            <TooltipContent side="top" className="max-w-[400px] text-right">
+              <p className="whitespace-pre-wrap break-words">{value}</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       {dropdown}
     </div>
   );
