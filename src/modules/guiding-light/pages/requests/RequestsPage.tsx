@@ -62,7 +62,7 @@ function RequestsPage() {
           <div>
             <h1 className="text-lg font-bold text-foreground">التوجيهات الوزارية</h1>
             <p className="text-[11px] text-muted-foreground">
-              {directives.length} توجيه • {pendingDirectives.length} قيد الانتظار
+              {directives.length} توجيه • {pendingDirectives.length} قيد المتابعة
             </p>
           </div>
         </div>
