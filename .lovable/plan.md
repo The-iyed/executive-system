@@ -1,36 +1,27 @@
 
 
-## Plan: Improve monthly view "+X more" popover with scroll and constrained height
+## Plan: Make calendar detail modal production-ready for large data
 
 ### Problem
-In monthly view, clicking "+X أخرى" opens FullCalendar's built-in popover which grows unbounded when there are many events (e.g. 34+ meetings), pushing content off-screen with no scrolling.
+When a meeting has many invitees or a long title/organizer name, the modal content can overflow or truncate poorly. The invitees list is hard-capped at 5 with no way to see more, and long text fields lack proper wrapping.
 
-### Solution
-FullCalendar uses `moreLinkClick="popover"` which renders a `.fc-popover` element. We need to add CSS rules to constrain the popover body (`.fc-popover .fc-popover-body`) with a `max-height` and `overflow-y: auto` for scrolling, plus a `min-height` so it doesn't collapse for days with few extra events.
+### Changes
 
-### Change
+#### `src/modules/UC02/features/calendar/components/EventDetailModal.tsx`
 
-#### `src/modules/UC02/components/MinisterFullCalendar.tsx`
-Add CSS styles (either via a `<style>` tag or in an existing CSS file) targeting the FullCalendar popover:
+1. **Increase visible invitees from 5 to 10** — change `MAX_VISIBLE_INVITEES` constant and update the slice. When there are more than 10, show a scrollable container with `max-h-[280px] overflow-y-auto` so all invitees are accessible.
 
-```css
-.minister-fc .fc-popover {
-  max-width: 320px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-}
-.minister-fc .fc-popover .fc-popover-body {
-  min-height: 80px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-```
+2. **Title text wrapping** — change the title `<h3>` from `line-clamp-2` to `break-words` with no line clamp, allowing full title display inside the scrollable body.
 
-This will be injected as a `<style>` block inside the component's wrapper div, or appended to the existing calendar CSS file if one exists.
+3. **Organizer name/email overflow** — increase `max-w-[260px]` to `max-w-[300px]` and add `break-all` for long email addresses without spaces.
+
+4. **Location text overflow** — add `break-all` to the location text span for long URLs displayed as plain text, increase max-width.
+
+5. **Invitee name/email overflow** — add `max-w-[280px]` to invitee name and email spans to prevent horizontal overflow on narrow viewports.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `MinisterFullCalendar.tsx` | Add scoped CSS for `.fc-popover` with min/max height and scroll on the popover body |
+| `EventDetailModal.tsx` | Scrollable invitees list, better text overflow handling for title/organizer/location/invitees |
 
