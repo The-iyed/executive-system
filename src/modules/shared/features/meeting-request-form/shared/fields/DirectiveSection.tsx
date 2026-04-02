@@ -10,9 +10,10 @@ interface Props {
   showMethod: boolean;
   showFile: boolean;
   showText: boolean;
+  required?: boolean;
 }
 
-export function DirectiveSection({ showMethod, showFile, showText }: Props) {
+export function DirectiveSection({ showMethod, showFile, showText, required = true }: Props) {
   const { register, control, formState: { errors } } = useFormContext();
   const directiveEditable = useIsFieldEditable("is_based_on_directive");
   const methodEditable = useIsFieldEditable("directive_method");
