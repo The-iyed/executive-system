@@ -112,13 +112,11 @@ export function ScheduleConfirmDialog({
             <div className="flex items-stretch gap-2.5">
               <ToggleCard
                 label="مبدئي"
-                description="اجتماع بدون محضر رسمي"
                 checked={isPreliminaryBooking}
                 onChange={onPreliminaryBookingChange}
               />
               <ToggleCard
                 label="البيانات مكتملة"
-                description="جميع المعلومات المطلوبة متوفرة"
                 checked={isDataComplete}
                 onChange={onDataCompleteChange}
               />
