@@ -308,6 +308,31 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     )}
                   </div>
                 </div>
+                {/* Scheduling Settings */}
+                {display.meetingId && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                        <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                      </div>
+                      <span className="text-[12px] font-semibold text-muted-foreground">إعدادات الجدولة</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-muted-foreground">مبدئي:</span>
+                        <span className="text-[11px] font-semibold text-foreground">
+                          {display.isPreliminary ? 'نعم' : 'لا'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-muted-foreground">البيانات مكتملة:</span>
+                        <span className="text-[11px] font-semibold text-foreground">
+                          {display.isDataComplete ? 'نعم' : 'لا'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Invitees */}
                 <div className="px-4 py-3">
                   <div className="flex items-center gap-2.5 mb-3">
@@ -319,31 +344,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                       {display.invitees.length}
                     </span>
                   </div>
-                  {/* Scheduling Settings - directly under المدعوون header */}
-                  {display.meetingId && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
-                          <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-                        </div>
-                        <span className="text-[12px] font-semibold text-muted-foreground">إعدادات الجدولة</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-muted-foreground">مبدئي:</span>
-                          <span className="text-[11px] font-semibold text-foreground">
-                            {display.isPreliminary ? 'نعم' : 'لا'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-muted-foreground">البيانات مكتملة:</span>
-                          <span className="text-[11px] font-semibold text-foreground">
-                            {display.isDataComplete ? 'نعم' : 'لا'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                   {display.invitees.length > 0 ? (
                     <div className="flex flex-col divide-y divide-border/30">
                       {display.invitees.slice(0, 5).map((a, idx) => (
