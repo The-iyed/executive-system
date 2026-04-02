@@ -9,14 +9,18 @@ export interface ManagerOption {
 }
 
 export function getUserId(user: UserSearchResult): string {
-  return user.objectGUID || user.mail || user.cn
-    || user.displayName || user.givenName
+  return user.id || user.objectGUID || user.mail || user.email
+    || user.cn || user.displayName || user.givenName
     || `user-${user.sn || ''}-${user.mobile || ''}`;
 }
 
 export function getUserLabel(user: UserSearchResult): string {
-  return user.displayNameAR || user.displayName || user.displayNameEN
-    || user.givenName || user.mail || '—';
+  return user.displayNameAR || user.ar_name
+    || user.displayName || user.name
+    || user.displayNameEN
+    || user.givenName || user.username
+    || [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
+    || user.mail || user.email || '—';
 }
 
 function toOption(user: UserSearchResult): ManagerOption {
