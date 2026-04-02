@@ -86,15 +86,6 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           )}>
             {directive.title}
           </h3>
-
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1 shrink-0 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
-            title="نسخ المحتوى"
-          >
-            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-            نسخ
-          </button>
         </div>
 
         {/* Left group: tags + date + badge + chevron */}
