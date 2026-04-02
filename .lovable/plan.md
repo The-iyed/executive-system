@@ -1,33 +1,46 @@
 
 
-## Plan: Make action buttons tag-sized and highlighted
+## Plan: Collapsible action buttons on directive cards
 
 ### Problem
-The action buttons (الأخذ بالتوجيه, طلب إجتماع) are currently larger than the metadata tags (`px-3.5 py-1.5 text-[12px] rounded-lg`). They should match the tag size and sit alongside them in the metadata tags row, with highlighted colors to stand out.
+The card row is visually crowded — metadata tags and action buttons all compete for space on one line. On narrower viewports this gets worse.
+
+### Recommendation: Expandable card row
+Instead of a full Radix collapsible (which adds vertical height), use a **click-to-expand approach** on the card itself:
+
+- **Default state**: Show only the status icon, title, date, and status badge — clean and scannable
+- **Expanded state**: On card click, reveal a second row below with metadata tags + action buttons
+- Use a subtle chevron indicator on the right to signal expandability
+- Smooth height animation via CSS `grid-template-rows` trick (0fr → 1fr)
 
 ### Changes
 
-#### 1. `DirectiveCard.tsx` — Resize buttons to tag size and move into tags row
+#### 1. `DirectiveCard.tsx` — Add expand/collapse state
 
-- **Move** the action buttons block from after the date (line 128-145) into the metadata tags `<div>` (line 86-117), placing them right after the existing tags
-- **Shrink** button base classes from `px-3.5 py-1.5 rounded-lg text-[12px]` → `px-2 py-0.5 rounded-md text-[10px]` to match the tag dimensions exactly
-- **Icon size**: reduce from `w-3.5 h-3.5` to `size-3` (matching tag icons)
+- Add `expanded` state toggle on card click
+- **Row 1 (always visible)**: Status icon + title + date + status badge + chevron
+- **Row 2 (collapsed by default)**: Metadata tags (جدولة, مهم, عاجل, duration, صوتي) + action buttons (الأخذ بالتوجيه, طلب إجتماع) + copy button
+- Animate the second row with `overflow-hidden transition-all` and `max-h-0` → `max-h-16`
+- Add a small `ChevronDown` icon that rotates 180deg when expanded
+- Voice player also moves into the expanded section
 
-#### 2. `DirectivesFeature.tsx` — Update action classNames for highlight colors
+#### 2. No changes needed to `DirectivesFeature.tsx`
+Action definitions stay the same — only the card layout changes.
 
-- **الأخذ بالتوجيه** (take): `bg-primary/10 border border-primary/30 text-primary font-semibold hover:bg-primary/20 hover:scale-[1.03] active:scale-[0.97] transition-all`
-- **طلب إجتماع** (meeting): `bg-teal-500/10 border border-teal-500/30 text-teal-600 font-semibold hover:bg-teal-500/20 hover:scale-[1.03] active:scale-[0.97] transition-all`
-- Update icon classes from `w-3.5 h-3.5` to `size-3`
+### Layout
 
-### Layout result (RTL)
 ```text
-[✓] [title...] [copy] [جدولة] [مهم] [عاجل] [الأخذ بالتوجيه] [طلب إجتماع] [صوتي] — [date] [status●]
+Default (collapsed):
+[✓] [title.................................] [28 مارس 2026] [مكتمل ●] [⌄]
+
+Expanded (on click):
+[✓] [title.................................] [28 مارس 2026] [مكتمل ●] [⌃]
+    [جدولة] [مهم] [عاجل] [صوتي]  [الأخذ بالتوجيه] [طلب إجتماع]  [نسخ]
 ```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DirectiveCard.tsx` | Move actions into tags div, shrink to `px-2 py-0.5 rounded-md text-[10px]` |
-| `DirectivesFeature.tsx` | Update action classNames to highlighted tag-like colors, icon size to `size-3` |
+| `DirectiveCard.tsx` | Add `expanded` state, split into two rows, animate expand/collapse with chevron indicator |
 
