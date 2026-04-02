@@ -299,7 +299,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[13px] font-medium text-foreground truncate max-w-[260px]">
+                        <span className="text-[13px] font-medium text-foreground truncate max-w-[300px] break-all">
                           {display.locationOrLink}
                         </span>
                       )
