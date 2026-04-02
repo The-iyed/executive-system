@@ -51,8 +51,7 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   const isImportant = directive.importance === 'IMPORTANT' || directive.importance === 'VERY_IMPORTANT';
 
   const visibleActions = actions?.filter((a) => !a.hidden?.(directive)) || [];
-  const hasTags = directive.directive_type || isImportant || isUrgent || (directive.due_duration_enabled && directive.due_duration_value) || hasVoice;
-  const hasExpandableContent = hasTags || visibleActions.length > 0;
+  const hasExpandableContent = visibleActions.length > 0 || hasVoice;
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -80,42 +79,26 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
         </div>
 
-        {/* Title */}
-        <h3 className="min-w-0 flex-1 truncate text-[13px] font-bold text-foreground leading-normal">
-          {directive.title}
-        </h3>
+        {/* Title + Copy */}
+        <div className="min-w-0 flex items-center gap-1.5 flex-shrink">
+          <h3 className={cn(
+            'min-w-0 text-[13px] font-bold text-foreground leading-normal',
+            expanded ? 'whitespace-normal' : 'truncate',
+          )}>
+            {directive.title}
+          </h3>
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1 shrink-0 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
+            title="نسخ المحتوى"
+          >
+            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+            نسخ
+          </button>
+        </div>
 
-        {/* Date */}
-        <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
-          <Calendar className="size-3" />
-          {formatDateArabic(directive.created_at)}
-        </span>
-
-        {/* Status badge */}
-        <span className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
-          badge.color,
-        )}>
-          {badge.label}
-          <span className={cn('size-1.5 rounded-full', badge.dot)} />
-        </span>
-
-        {/* Chevron */}
-        {hasExpandableContent && (
-          <ChevronDown className={cn(
-            'size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200',
-            expanded && 'rotate-180',
-          )} />
-        )}
-      </div>
-
-      {/* Row 2: Expandable content */}
-      <div className={cn(
-        'overflow-hidden transition-all duration-200 ease-in-out',
-        expanded ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0',
-      )}>
-        <div className="flex items-center gap-1.5 mr-10 flex-wrap">
-          {/* Metadata tags */}
+        {/* Metadata tags */}
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
           {directive.directive_type && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <FileText className="size-3" />
@@ -146,46 +129,62 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               صوتي
             </span>
           )}
-
-          {/* Separator */}
-          {hasTags && visibleActions.length > 0 && (
-            <span className="text-border mx-1">|</span>
-          )}
-
-          {/* Action buttons */}
-          {visibleActions.map((action) => (
-            <button
-              key={action.id}
-              onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
-              className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all whitespace-nowrap',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-                action.className,
-              )}
-            >
-              {action.icon}
-              {action.label}
-            </button>
-          ))}
-
-          {/* Copy */}
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
-            title="نسخ المحتوى"
-          >
-            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-            نسخ
-          </button>
         </div>
 
-        {/* Voice player */}
-        {hasVoice && (
-          <div className="mt-2 mr-10 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
-            <VoicePlayer url={directive.voice_play_url!} compact />
-          </div>
+        {/* Date */}
+        <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
+          <Calendar className="size-3" />
+          {formatDateArabic(directive.created_at)}
+        </span>
+
+        {/* Status badge */}
+        <span className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
+          badge.color,
+        )}>
+          {badge.label}
+          <span className={cn('size-1.5 rounded-full', badge.dot)} />
+        </span>
+
+        {/* Chevron */}
+        {hasExpandableContent && (
+          <ChevronDown className={cn(
+            'size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200',
+            expanded && 'rotate-180',
+          )} />
         )}
       </div>
+
+      {/* Row 2: Expandable — actions + voice only */}
+      {hasExpandableContent && (
+        <div className={cn(
+          'overflow-hidden transition-all duration-200 ease-in-out',
+          expanded ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0',
+        )}>
+          <div className="flex items-center gap-1.5 mr-10 flex-wrap">
+            {visibleActions.map((action) => (
+              <button
+                key={action.id}
+                onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
+                className={cn(
+                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all whitespace-nowrap',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                  action.className,
+                )}
+              >
+                {action.icon}
+                {action.label}
+              </button>
+            ))}
+          </div>
+
+          {hasVoice && (
+            <div className="mt-2 mr-10 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
+              <VoicePlayer url={directive.voice_play_url!} compact />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
