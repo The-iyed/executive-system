@@ -222,11 +222,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     <span className="text-[12px] font-semibold text-muted-foreground">المنظم</span>
                   </div>
                   <div className="flex flex-col items-end min-w-0">
-                    <span className="text-[13px] font-semibold text-foreground truncate max-w-[260px]">
+                    <span className="text-[13px] font-semibold text-foreground truncate max-w-[300px]">
                       {display.organizerName || display.organizerEmail || '—'}
                     </span>
                     {display.organizerEmail && display.organizerName && (
-                      <span className="text-[11px] text-muted-foreground truncate max-w-[260px]">
+                      <span className="text-[11px] text-muted-foreground truncate max-w-[300px] break-all">
                         {display.organizerEmail}
                       </span>
                     )}
