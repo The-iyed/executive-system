@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Clock, CheckCircle2, FileText, Volume2, AlertTriangle,
-  Zap, Copy, Check, Calendar,
+  Zap, Copy, Check, Calendar, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/ui';
@@ -41,6 +41,7 @@ const STATUS_BADGE: Record<string, { color: string; dot: string; label: string }
 
 export function DirectiveCard({ directive, statusField = 'scheduling_officer_status', actions }: DirectiveCardProps) {
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const statusValue = statusField === 'status' ? directive.status : directive.scheduling_officer_status;
   const badge = STATUS_BADGE[statusValue] || STATUS_BADGE.OPEN;
@@ -48,6 +49,10 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   const hasVoice = !!directive.voice_play_url;
   const isUrgent = directive.priority === 'URGENT' || directive.priority === 'VERY_URGENT';
   const isImportant = directive.importance === 'IMPORTANT' || directive.importance === 'VERY_IMPORTANT';
+
+  const visibleActions = actions?.filter((a) => !a.hidden?.(directive)) || [];
+  const hasTags = directive.directive_type || isImportant || isUrgent || (directive.due_duration_enabled && directive.due_duration_value) || hasVoice;
+  const hasExpandableContent = hasTags || visibleActions.length > 0;
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -58,7 +63,14 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   };
 
   return (
-    <div className="group px-5 py-3.5 transition-colors hover:bg-muted/20">
+    <div
+      className={cn(
+        'group px-5 py-3.5 transition-colors cursor-pointer select-none',
+        expanded ? 'bg-muted/30' : 'hover:bg-muted/20',
+      )}
+      onClick={() => hasExpandableContent && setExpanded((v) => !v)}
+    >
+      {/* Row 1: Always visible */}
       <div className="flex items-center gap-3">
         {/* Status icon */}
         <div className={cn(
@@ -73,17 +85,37 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           {directive.title}
         </h3>
 
-        {/* Copy */}
-        <button
-          onClick={handleCopy}
-          className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-muted/60 transition-all"
-          title="نسخ المحتوى"
-        >
-          {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-        </button>
+        {/* Date */}
+        <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
+          <Calendar className="size-3" />
+          {formatDateArabic(directive.created_at)}
+        </span>
 
-        {/* Metadata tags */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Status badge */}
+        <span className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
+          badge.color,
+        )}>
+          {badge.label}
+          <span className={cn('size-1.5 rounded-full', badge.dot)} />
+        </span>
+
+        {/* Chevron */}
+        {hasExpandableContent && (
+          <ChevronDown className={cn(
+            'size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200',
+            expanded && 'rotate-180',
+          )} />
+        )}
+      </div>
+
+      {/* Row 2: Expandable content */}
+      <div className={cn(
+        'overflow-hidden transition-all duration-200 ease-in-out',
+        expanded ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0',
+      )}>
+        <div className="flex items-center gap-1.5 mr-10 flex-wrap">
+          {/* Metadata tags */}
           {directive.directive_type && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <FileText className="size-3" />
@@ -114,8 +146,14 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               صوتي
             </span>
           )}
-          {/* Action buttons — tag-sized, inline */}
-          {actions && actions.filter((a) => !a.hidden?.(directive)).map((action) => (
+
+          {/* Separator */}
+          {hasTags && visibleActions.length > 0 && (
+            <span className="text-border mx-1">|</span>
+          )}
+
+          {/* Action buttons */}
+          {visibleActions.map((action) => (
             <button
               key={action.id}
               onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
@@ -129,32 +167,25 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               {action.label}
             </button>
           ))}
+
+          {/* Copy */}
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
+            title="نسخ المحتوى"
+          >
+            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+            نسخ
+          </button>
         </div>
 
-        <span className="text-border">—</span>
-
-        {/* Date */}
-        <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
-          <Calendar className="size-3" />
-          {formatDateArabic(directive.created_at)}
-        </span>
-
-        {/* Status badge */}
-        <span className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
-          badge.color,
-        )}>
-          {badge.label}
-          <span className={cn('size-1.5 rounded-full', badge.dot)} />
-        </span>
+        {/* Voice player */}
+        {hasVoice && (
+          <div className="mt-2 mr-10 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
+            <VoicePlayer url={directive.voice_play_url!} compact />
+          </div>
+        )}
       </div>
-
-      {/* Voice player */}
-      {hasVoice && (
-        <div className="mt-2 mr-10 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
-          <VoicePlayer url={directive.voice_play_url!} compact />
-        </div>
-      )}
     </div>
   );
 }
