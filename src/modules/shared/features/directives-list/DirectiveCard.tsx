@@ -158,7 +158,7 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           'overflow-hidden transition-all duration-200 ease-in-out',
           expanded ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0',
         )}>
-          <div className="<div className="flex justify-end items-center gap-1.5 flex-wrap pr-9 pl-9">">
+          <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9 pl-9">">
             {visibleActions.map((action) => (
               <button
                 key={action.id}
