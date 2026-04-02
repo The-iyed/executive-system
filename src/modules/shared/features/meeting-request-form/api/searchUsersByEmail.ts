@@ -3,6 +3,7 @@ import { PAGE_SIZE, axiosInstance, toError } from './config';
 /** Generic user result from the email search API — used by manager select, invitees table, etc. */
 export interface UserSearchResult {
   objectGUID?: string;
+  id?: string;
   displayName: string;
   displayNameAR: string | null;
   displayNameEN: string | null;
@@ -15,6 +16,12 @@ export interface UserSearchResult {
   company: string | null;
   mobile: string | null;
   is_disabled: number;
+  name?: string;
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  ar_name?: string | null;
 }
 
 export async function searchUsersByEmail(
