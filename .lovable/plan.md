@@ -1,39 +1,40 @@
 
 
-## Plan: Make meeting date always required + improve user display label fallback
+## Plan: Fix empty submitter/owner display on edit form
+
+### Root Cause
+The edit API returns user objects with different field names (`id`, `name`, `ar_name`, `email`) than the directory search API (`objectGUID`, `displayNameAR`, `mail`). Current `getUserId()` and `getUserLabel()` only check directory-style fields.
 
 ### Changes
 
-#### 1. `submitter/Step1Form.tsx` — Make date always required
-Line 71: change `required={!isSchedulerEdit}` to `required` (always true).
+#### 1. `searchUsersByEmail.ts` — Add edit-API fields to `UserSearchResult` type
+Add optional: `id`, `name`, `username`, `email`, `first_name`, `last_name`, `ar_name`
 
-#### 2. `userDisplayLabel.ts` — Fix name priority before mail
-Currently `getUserDisplayLabel` checks `mail` first. Reorder to prioritize name fields, and add `name`, `username`, `email`, `first_name`/`last_name` fallbacks before mail:
-
+#### 2. `useManagerSearch.ts` — Expand `getUserId` with `id` first
 ```ts
-export function getUserDisplayLabel(user: Record<string, unknown>): string {
-  if (user.displayNameAR && typeof user.displayNameAR === 'string') return user.displayNameAR;
-  if (user.displayName && typeof user.displayName === 'string') return user.displayName;
-  if (user.displayNameEN && typeof user.displayNameEN === 'string') return user.displayNameEN;
-  if (user.givenName && typeof user.givenName === 'string') return user.givenName;
-  if (user.name && typeof user.name === 'string') return user.name;
-  if (user.username && typeof user.username === 'string') return user.username;
-  const first = user.first_name ?? user.givenName;
-  const last = user.last_name ?? user.sn;
-  const full = [first, last].filter(Boolean).join(' ').trim();
-  if (full) return full;
-  const mail = user.mail ?? user.email;
-  if (mail && typeof mail === 'string') return mail;
-  return String(user.cn ?? '');
+export function getUserId(user: UserSearchResult): string {
+  return user.id || user.objectGUID || user.mail || user.email
+    || user.cn || user.displayName || user.givenName
+    || `user-${user.sn || ''}-${user.mobile || ''}`;
 }
 ```
 
-Priority: `displayNameAR` > `displayName` > `displayNameEN` > `givenName` > `name` > `username` > `first_name + last_name` > `mail/email` > `cn`
+#### 3. `useManagerSearch.ts` — Expand `getUserLabel`
+```ts
+export function getUserLabel(user: UserSearchResult): string {
+  return user.displayNameAR || user.ar_name
+    || user.displayName || user.name
+    || user.displayNameEN
+    || user.givenName || user.username
+    || [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
+    || user.mail || user.email || '—';
+}
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `submitter/Step1Form.tsx` | Change `MeetingDateField` required prop to always `true` |
-| `userDisplayLabel.ts` | Reorder fallback chain: names before mail, add `name`/`username`/`first_name`+`last_name` |
+| `searchUsersByEmail.ts` | Add optional `id`, `name`, `username`, `email`, `first_name`, `last_name`, `ar_name` to `UserSearchResult` |
+| `useManagerSearch.ts` | `getUserId`: `id` first, then `objectGUID`, etc. `getUserLabel`: add `ar_name`, `name`, `username`, `first_name+last_name`, `email` |
 
