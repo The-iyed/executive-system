@@ -36,8 +36,9 @@ export function ManagerSelect({
     useManagerSearch(debouncedSearch, open);
 
   const options = data?.options ?? [];
-  const selectedId = value?.objectGUID || value?.mail || "";
-  const selectedLabel = options.find((o) => o.value === selectedId)?.label || initialLabel || "";
+  const selectedId = value ? getUserId(value) : "";
+  const matchedLabel = options.find((o) => o.value === selectedId)?.label;
+  const selectedLabel = matchedLabel || (value ? getUserLabel(value) : "") || initialLabel || "";
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
