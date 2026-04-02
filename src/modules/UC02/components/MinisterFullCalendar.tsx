@@ -349,7 +349,7 @@ export const MinisterFullCalendar: React.FC<MinisterFullCalendarProps> = ({
         unselectAuto
         select={handleSelect}
         datesSet={onDatesSet}
-        slotMinTime="00:00:00"
+        slotMinTime="07:00:00"
         slotMaxTime="24:00:00"
         allDaySlot={false}
         nowIndicator
