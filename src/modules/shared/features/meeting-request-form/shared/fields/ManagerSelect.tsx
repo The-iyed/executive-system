@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/ui";
 import { ChevronDown, Search, Loader2, X } from "lucide-react";
-import { useManagerSearch, type ManagerOption } from "../hooks/useManagerSearch";
+import { useManagerSearch, getUserId, getUserLabel, type ManagerOption } from "../hooks/useManagerSearch";
 import type { UserSearchResult } from "../../api";
 
 interface ManagerSelectProps {
