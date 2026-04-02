@@ -58,68 +58,37 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   };
 
   return (
-    <div className="group px-5 py-4 transition-colors hover:bg-muted/20">
-      {/* Row 1: icon + title + copy (right) — badge (left) */}
-      <div className="flex items-start justify-between gap-4">
-        {/* Right: icon + title + copy */}
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          <div className={cn(
-            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full',
-            isCompleted ? 'text-emerald-500' : 'text-muted-foreground',
-          )}>
-            {isCompleted ? <CheckCircle2 className="size-5" /> : <Clock className="size-5" />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-[14px] font-bold text-foreground leading-relaxed line-clamp-2">
-                {directive.title}
-              </h3>
-              <button
-                onClick={handleCopy}
-                className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
-                title="نسخ المحتوى"
-              >
-                {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-              </button>
-            </div>
-            <p className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-              <Calendar className="size-3" />
-              {formatDateArabic(directive.created_at)}
-            </p>
-          </div>
-        </div>
-
-        {/* Left: badge */}
-        <span className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
-          badge.color,
+    <div className="group px-5 py-3.5 transition-colors hover:bg-muted/20">
+      {/* Single row: icon + title — tags — date — badge */}
+      <div className="flex items-center gap-3">
+        {/* Status icon */}
+        <div className={cn(
+          'flex size-7 shrink-0 items-center justify-center rounded-full',
+          isCompleted ? 'text-emerald-500' : 'text-muted-foreground',
         )}>
-          <span className={cn('size-1.5 rounded-full', badge.dot)} />
-          {badge.label}
-        </span>
-      </div>
-
-      {/* Voice */}
-      {hasVoice && (
-        <div className="mt-2 mr-11 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
-          <VoicePlayer url={directive.voice_play_url!} compact />
+          {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
         </div>
-      )}
 
-      {/* Row 2: tags (right) — actions (left) */}
-      <div className="flex items-center justify-between gap-4 mt-2 mr-11">
-        {/* Tags */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Title (takes available space) */}
+        <h3 className="min-w-0 flex-1 truncate text-[13px] font-bold text-foreground leading-normal">
+          {directive.title}
+        </h3>
+
+        {/* Copy button (subtle) */}
+        <button
+          onClick={handleCopy}
+          className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-muted/60 transition-all"
+          title="نسخ المحتوى"
+        >
+          {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+        </button>
+
+        {/* Metadata tags */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {directive.directive_type && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200/60 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <FileText className="size-3" />
               {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
-            </span>
-          )}
-          {isUrgent && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/80 border border-rose-200/50 px-2 py-0.5 text-[10px] font-semibold text-rose-500">
-              <AlertTriangle className="size-3" />
-              {PRIORITY_LABELS[directive.priority!]}
             </span>
           )}
           {isImportant && (
@@ -128,8 +97,14 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               {IMPORTANCE_LABELS[directive.importance!]}
             </span>
           )}
+          {isUrgent && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/80 border border-rose-200/50 px-2 py-0.5 text-[10px] font-semibold text-rose-500">
+              <AlertTriangle className="size-3" />
+              {PRIORITY_LABELS[directive.priority!]}
+            </span>
+          )}
           {directive.due_duration_enabled && directive.due_duration_value && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200/60 px-2 py-0.5 text-[10px] text-slate-500">
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground">
               <Clock className="size-3" />
               {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
             </span>
@@ -142,25 +117,50 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           )}
         </div>
 
-        {/* Actions (bottom left) */}
-        {actions && actions.length > 0 && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            {actions.filter((a) => !a.hidden?.(directive)).map((action) => (
-              <button
-                key={action.id}
-                onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
-                className={cn(
-                  'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all whitespace-nowrap',
-                  action.className,
-                )}
-              >
-                {action.icon}
-                {action.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Separator */}
+        <span className="text-border">—</span>
+
+        {/* Date */}
+        <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
+          <Calendar className="size-3" />
+          {formatDateArabic(directive.created_at)}
+        </span>
+
+        {/* Status badge */}
+        <span className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
+          badge.color,
+        )}>
+          {badge.label}
+          <span className={cn('size-1.5 rounded-full', badge.dot)} />
+        </span>
       </div>
+
+      {/* Voice player (secondary row) */}
+      {hasVoice && (
+        <div className="mt-2 mr-10 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
+          <VoicePlayer url={directive.voice_play_url!} compact />
+        </div>
+      )}
+
+      {/* Actions (secondary row, visible on hover) */}
+      {actions && actions.length > 0 && (
+        <div className="flex items-center justify-end gap-1.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {actions.filter((a) => !a.hidden?.(directive)).map((action) => (
+            <button
+              key={action.id}
+              onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all whitespace-nowrap',
+                action.className,
+              )}
+            >
+              {action.icon}
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
