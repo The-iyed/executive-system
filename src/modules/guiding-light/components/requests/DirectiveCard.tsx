@@ -62,7 +62,7 @@ function DirectiveCard({ directive }: DirectiveCardProps) {
               isOpen ? "bg-amber-500 animate-pulse" : "bg-primary"
             )}
           />
-          {isOpen ? "قيد الانتظار" : statusLabel}
+          {isOpen ? "قيد المتابعة" : statusLabel}
         </span>
       </div>
 
