@@ -345,8 +345,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     </span>
                   </div>
                   {display.invitees.length > 0 ? (
-                    <div className="flex flex-col divide-y divide-border/30">
-                      {display.invitees.slice(0, 5).map((a, idx) => (
+                    <div className="flex flex-col divide-y divide-border/30 max-h-[280px] overflow-y-auto pr-1 -mr-1">
+                      {display.invitees.map((a, idx) => (
                         <div key={`${a.name}-${idx}`} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
                           <div
                             className={cn(
@@ -356,21 +356,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                           >
                             <span className="text-[10px] font-bold">{getInitials(a.name || a.email || '?')}</span>
                           </div>
-                          <div className="flex flex-col min-w-0">
+                          <div className="flex flex-col min-w-0 max-w-[280px]">
                             <span className="text-[13px] font-semibold text-foreground truncate">{a.name || '—'}</span>
                             {a.email && (
-                              <span className="text-[11px] text-muted-foreground truncate">{a.email}</span>
+                              <span className="text-[11px] text-muted-foreground truncate break-all">{a.email}</span>
                             )}
                           </div>
                         </div>
                       ))}
-                      {display.invitees.length > 5 && (
-                        <div className="pt-2.5">
-                          <span className="text-[11px] font-semibold text-primary">
-                            +{display.invitees.length - 5} آخرين
-                          </span>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <span className="text-[12px] text-muted-foreground">—</span>
