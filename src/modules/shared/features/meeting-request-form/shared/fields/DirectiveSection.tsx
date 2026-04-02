@@ -76,7 +76,7 @@ function MeetingMinutesFileField({ required = true }: { required?: boolean }) {
   }, []);
 
   return (
-    <FormField label="محضر الاجتماع" name="previous_meeting_minutes_file_content" required errors={errors} colSpan={4}>
+    <FormField label="محضر الاجتماع" name="previous_meeting_minutes_file_content" required={required} errors={errors} colSpan={4}>
       <Controller name="previous_meeting_minutes_file_content" control={control}
         render={({ field }) => {
           const val = field.value;
