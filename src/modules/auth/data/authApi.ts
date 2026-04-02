@@ -87,9 +87,7 @@ export const getCurrentUserApi = async (): Promise<User> => {
     }
     return user;
   } catch (error) {
-    if (typeof window !== 'undefined') {
-      window.alert(formatMeRequestError(error));
-    }
+    console.error(formatMeRequestError(error));
     throw error;
   }
 };
