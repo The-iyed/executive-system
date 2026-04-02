@@ -62,7 +62,7 @@ export function DirectiveSection({ showMethod, showFile, showText, required = tr
   );
 }
 
-function MeetingMinutesFileField() {
+function MeetingMinutesFileField({ required = true }: { required?: boolean }) {
   const { control, formState: { errors } } = useFormContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
