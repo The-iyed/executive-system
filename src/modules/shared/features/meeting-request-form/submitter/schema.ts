@@ -13,14 +13,24 @@ import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from ".
 /* ─── Submitter Step 1 Schema ─── */
 
 const meetingUserSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().optional(),
-  username: z.string().optional(),
-  email: z.string().optional(),
-  displayName: z.string().optional(),
-  givenName: z.string().optional(),
-  mail: z.string().optional(),
-  objectGUID: z.string().optional(),
+  id: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+  username: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  displayName: z.string().nullable().optional(),
+  displayNameAR: z.string().nullable().optional(),
+  displayNameEN: z.string().nullable().optional(),
+  givenName: z.string().nullable().optional(),
+  mail: z.string().nullable().optional(),
+  objectGUID: z.string().nullable().optional(),
+  cn: z.string().nullable().optional(),
+  sn: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  department: z.string().nullable().optional(),
+  company: z.string().nullable().optional(),
+  mobile: z.string().nullable().optional(),
+  manager: z.string().nullable().optional(),
+  is_disabled: z.number().nullable().optional(),
 }).passthrough();
 
 export const submitterStep1Schema = z.object({
