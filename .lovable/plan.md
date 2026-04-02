@@ -1,23 +1,24 @@
 
 
-## Plan: Remove validation error from ScheduleTab, keep only in modal
+## Plan: Remove descriptions from ToggleCards and unify إعدادات الجدولة style
 
 ### Problem
-The `validationError` (e.g. "وقت النهاية يجب أن يكون بعد وقت البداية") is displayed inside the الجدولة tab via `ScheduleTab`. This error should only appear inside the scheduling confirmation modal (`ScheduleConfirmDialog`), not on the tab itself.
+Both مبدئي and البيانات مكتملة have sub-descriptions underneath them in three places. User wants these removed. Additionally, the calendar create form's إعدادات الجدولة should match the تأكيد الجدولة modal's ToggleCard style (centered, card-based).
 
 ### Changes
 
-#### 1. `src/modules/UC02/features/meeting-detail/tabs/ScheduleTab.tsx`
-- Remove `validationError` from the props interface
-- Remove the error banner rendering block (lines 18–22)
+#### 1. `ScheduleConfirmDialog.tsx` — Remove description from ToggleCard
+- Remove the `description` prop and its rendering (line 77) from the `ToggleCard` component
+- Remove `description` from the two `<ToggleCard>` usages (lines 119, 125)
 
-#### 2. `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx` (~line 161)
-- Remove `validationError={h.validationError}` prop from the `<ScheduleTab>` usage
+#### 2. `CalendarSlotMeetingForm.tsx` — Remove descriptions + match modal style
+- Remove the description lines (348 "يتطلب بروتوكول" and 374 "جميع البيانات جاهزة")
+- Restyle both toggle buttons to match `ScheduleConfirmDialog`'s centered ToggleCard layout: vertical flex-col centered with checkbox on top, label below, no description
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `ScheduleTab.tsx` | Remove `validationError` prop and error banner |
-| `MeetingDetailPage.tsx` | Stop passing `validationError` to `ScheduleTab` |
+| `ScheduleConfirmDialog.tsx` | Remove `description` prop/rendering from `ToggleCard`, remove description from both usages |
+| `CalendarSlotMeetingForm.tsx` | Remove description text, restyle toggles to centered card layout matching the modal |
 
