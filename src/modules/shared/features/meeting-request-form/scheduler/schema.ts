@@ -73,6 +73,12 @@ export const schedulerStep1Schema = z.object({
   if ([AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(data.meeting_channel) && data.meeting_location === MeetingLocation.OTHER && !data.meeting_location_custom) {
     ctx.addIssue({ code: "custom", path: ["meeting_location_custom"], message: "يرجى تحديد الموقع" });
   }
+  if (!data.meeting_start_date) {
+    ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
+  }
+  if (!data.meeting_end_date) {
+    ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
+  }
   if (data.agenda_items?.length > 0) validateAgendaItems(data.agenda_items, ctx);
   validateAgendaDuration(data.agenda_items ?? [], data.meeting_start_date, data.meeting_end_date, ctx);
 });
