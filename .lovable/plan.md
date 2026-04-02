@@ -1,41 +1,33 @@
 
 
-## Plan: Improve directives card UI/UX to match reference + rename status label
+## Plan: Improve UX of action buttons (الأخذ بالتوجيه & طلب إجتماع)
 
-### What changes
-
-The reference image shows a **single-row horizontal layout** where everything sits on one line:
-- **Right**: Check icon + title
-- **Center/Left**: Tags (جدولة, مهم, عاجل) + duration (—) + date (30 مارس 2026) + status badge (تم اعتماد التوجيه) — all inline in a single row
-
-Currently the card uses a two-row layout (title+badge on row 1, tags+actions on row 2). We need to flatten this into one clean row.
-
-Also rename `قيد الانتظار` → `قيد المتابعة`.
+### Current issues
+- Buttons are hidden by default, only appear on hover (`opacity-0 group-hover:opacity-100`) — poor discoverability on touch devices and unclear affordance
+- Small text (11px), minimal padding, no visual hierarchy between the two actions
+- No loading/disabled state feedback when clicked
+- Positioned in a separate row below content — disconnected from the card
 
 ### Changes
 
-#### 1. `minister-directive-enums.ts` — Rename OPEN label
-Change line 42: `OPEN: 'قيد الانتظار'` → `OPEN: 'قيد المتابعة'`
+#### 1. `DirectiveCard.tsx` — Always-visible buttons inline with the card row
 
-#### 2. `DirectiveCard.tsx` — Flatten to single-row horizontal layout
-Redesign the card to match the reference image:
-- Single horizontal flex row with `items-center`
-- Right side: status icon (CheckCircle2 or Clock) + title (truncated single line)
-- Center: metadata tags in a row (directive type, importance, priority, duration)
-- Left side: date + status badge
-- Remove the two-row layout, voice player stays below if present
-- Actions row stays below as a secondary row (only visible on hover or always visible)
-- Remove copy button from inline (or keep it subtle on hover)
+- **Remove hover-only visibility**: Change from `opacity-0 group-hover:opacity-100` to always visible
+- **Move buttons inline**: Place action buttons at the far left of the main row (before the status badge) instead of a separate secondary row
+- **Better sizing**: Increase padding to `px-3.5 py-1.5`, font to `text-[12px]`, rounded to `rounded-lg`
+- **Visual hierarchy**: "طلب إجتماع" (primary action) gets the branded teal gradient (`from-[#048F86] via-[#069E95] to-[#0BB5AA]`) with white text; "الأخذ بالتوجيه" gets an outlined style with subtle hover lift
+- **Micro-interactions**: Add `transition-all hover:scale-[1.03] active:scale-[0.97]` matching the project's standard button pattern
+- **Focus ring**: Add `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1` for accessibility
 
-The layout follows this horizontal flow (RTL):
-```text
-[✓ icon] [title...] ——— [جدولة] [مهم] [عاجل] [—] [30 مارس 2026] [تم اعتماد التوجيه ●]
-```
+#### 2. `DirectivesFeature.tsx` — Update button classNames
+
+- Update the `className` for "take" action: outlined style with hover lift (`border border-primary/30 text-primary bg-white hover:bg-primary/5 hover:shadow-sm hover:scale-[1.03] active:scale-[0.97]`)
+- Update the `className` for "meeting" action: teal gradient (`bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] text-white shadow-sm hover:shadow hover:scale-[1.03] active:scale-[0.97]`)
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `minister-directive-enums.ts` | `OPEN: 'قيد المتابعة'` |
-| `DirectiveCard.tsx` | Flatten card to single-row horizontal layout matching reference image |
+| `DirectiveCard.tsx` | Move actions inline, always visible, better sizing/padding/rounded, add focus ring and transition |
+| `DirectivesFeature.tsx` | Update action classNames with gradient primary + outlined secondary + micro-interactions |
 
