@@ -183,7 +183,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   <Calendar className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 </div>
                 <div className="flex flex-col min-w-0 gap-1">
-                  <h3 className="text-foreground font-bold text-[16px] leading-6 line-clamp-2">{display.title}</h3>
+                  <h3 className="text-foreground font-bold text-[16px] leading-6 break-words">{display.title}</h3>
                   {display.is_internal !== undefined && (
                     <span className={cn(
                       'text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit',
