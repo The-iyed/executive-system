@@ -1,28 +1,28 @@
 
 
-## Plan: Move copy button before tags + add right padding to collapsed actions
+## Plan: Align collapsed actions with metadata tags
 
-### Changes to `DirectiveCard.tsx`
+### Problem
+The action buttons in the expanded row don't have the same left-side spacing as the metadata tags above them. The chevron and status badge area creates a visual indent on the left that the actions row doesn't match.
 
-#### 1. Move copy button to the right of tags (before metadata tags)
-Currently the copy button sits after the status badge (line 137-144). Move it to be the **first element** in the left group (line 92), so it appears to the right of all tags in RTL.
+### Change to `DirectiveCard.tsx`
 
-#### 2. Add right-side spacing to the actions row
-The collapsed actions row (line 161) currently uses `justify-end` with no indentation. Add `pr-9` (matching the icon+gap width) to indent actions from the right edge, creating visual separation from the title.
-
-### Layout
+On line 161, the actions container has `pr-9` for right padding but no left padding. Add `pl-9` to match the left-side spacing of the chevron + badge area, so actions visually align under the metadata tags.
 
 ```text
-Row 1:
-[✓] [title...] ——— [نسخ] [جدولة] [مهم] [عاجل] [28 مارس] [مكتمل ●] [⌄]
+Before:  <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9">
+After:   <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9 pl-9">
+```
 
-Row 2 (expanded):
-         [padding]                    [الأخذ بالتوجيه] [طلب إجتماع]
+### Layout
+```text
+Row 1: [✓] [title...] ——— [نسخ] [جدولة] [مهم] [عاجل] [28 مارس] [مكتمل ●] [⌄]
+Row 2:      [padding-r]    [طلب إجتماع]                          [padding-l]
 ```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DirectiveCard.tsx` | Move copy button before tags in left group; add `pr-9` to actions row |
+| `DirectiveCard.tsx` | Add `pl-9` to actions row container (line 161) |
 
