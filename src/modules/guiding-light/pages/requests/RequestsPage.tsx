@@ -39,7 +39,7 @@ function RequestsPage() {
   const tabs = [
     {
       id: "pending" as const,
-      label: "قيد الانتظار",
+      label: "قيد المتابعة",
       count: pendingDirectives.length,
       icon: Clock,
     },
