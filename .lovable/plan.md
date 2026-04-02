@@ -1,27 +1,78 @@
-
-
-## Plan: Make calendar detail modal production-ready for large data
+## Plan: Robust user selection fields with proper name priority and clean payload
 
 ### Problem
-When a meeting has many invitees or a long title/organizer name, the modal content can overflow or truncate poorly. The invitees list is hard-capped at 5 with no way to see more, and long text fields lack proper wrapping.
+The API can return users where `objectGUID`, `mail`, `cn` are all `null`. This causes:
+- Option `value` becomes `''` — multiple users collapse into one
+- Selected label doesn't display, X button doesn't appear
+- The payload sends all null fields unnecessarily
 
 ### Changes
 
-#### `src/modules/UC02/features/calendar/components/EventDetailModal.tsx`
+#### 1. `useManagerSearch.ts` — robust `toOption` with name priority
 
-1. **Increase visible invitees from 5 to 10** — change `MAX_VISIBLE_INVITEES` constant and update the slice. When there are more than 10, show a scrollable container with `max-h-[280px] overflow-y-auto` so all invitees are accessible.
+Add two helper functions and update `toOption`:
 
-2. **Title text wrapping** — change the title `<h3>` from `line-clamp-2` to `break-words` with no line clamp, allowing full title display inside the scrollable body.
+```ts
+function getUserId(user: UserSearchResult): string {
+  return user.objectGUID || user.mail || user.cn 
+    || user.displayName || user.givenName 
+    || `user-${user.sn || ''}-${user.mobile || ''}`;
+}
 
-3. **Organizer name/email overflow** — increase `max-w-[260px]` to `max-w-[300px]` and add `break-all` for long email addresses without spaces.
+function getUserLabel(user: UserSearchResult): string {
+  return user.displayNameAR || user.displayName || user.displayNameEN 
+    || user.givenName || user.mail || '—';
+}
 
-4. **Location text overflow** — add `break-all` to the location text span for long URLs displayed as plain text, increase max-width.
+function toOption(user: UserSearchResult): ManagerOption {
+  return {
+    value: getUserId(user),
+    label: getUserLabel(user),
+    subtitle: user.mail || user.title || '—',
+    user,
+  };
+}
+```
 
-5. **Invitee name/email overflow** — add `max-w-[280px]` to invitee name and email spans to prevent horizontal overflow on narrow viewports.
+Export `getUserId` and `getUserLabel` for reuse.
+
+#### 2. `ManagerSelect.tsx` — use same ID/label resolution
+
+- Line 39: Change `selectedId` to use the same fallback chain:
+  ```ts
+  const selectedId = value ? (value.objectGUID || value.mail || value.cn || value.displayName || value.givenName || "") : "";
+  ```
+
+- Line 73-74: Show label from value directly when no option match:
+  ```ts
+  {value ? (selectedLabel || value.displayNameAR || value.displayName || value.displayNameEN || value.givenName || value.mail || '—') : placeholder || "ابحث بالبريد الإلكتروني..."}
+  ```
+
+- Line 77: Show X button when `value` exists (not just when `selectedId` is truthy):
+  ```ts
+  {value && (
+    <X ... onClick={() => onChange(null)} />
+  )}
+  ```
+
+#### 3. `buildStep1FormData.ts` — clean null fields from user objects before sending
+
+When serializing `meeting_owner` or `submitter` objects, strip null/undefined fields to send a clean payload:
+
+```ts
+} else if (typeof value === "object" && !(value instanceof Date)) {
+  // Strip null/undefined values from nested objects
+  const cleaned = Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(([, v]) => v != null && v !== '')
+  );
+  fd.append(apiKey, JSON.stringify(cleaned));
+}
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Scrollable invitees list, better text overflow handling for title/organizer/location/invitees |
-
+| `useManagerSearch.ts` | Add `getUserId`/`getUserLabel` helpers with full fallback chain, export them |
+| `ManagerSelect.tsx` | Use same fallback chain for selectedId, show label/X when value exists |
+| `buildStep1FormData.ts` | Strip null/undefined fields from nested objects before JSON.stringify |
