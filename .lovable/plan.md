@@ -1,45 +1,41 @@
 
 
-## Plan: Remove required asterisk (*) from directive fields for scheduler officer
+## Plan: Improve directives card UI/UX to match reference + rename status label
 
-### Problem
-When a scheduler officer edits a meeting, the directive fields (طريقة التوجيه, محضر الاجتماع, التوجيه) show a red `*` asterisk even though they are not required for scheduler edits (we already made them optional in the schema).
+### What changes
+
+The reference image shows a **single-row horizontal layout** where everything sits on one line:
+- **Right**: Check icon + title
+- **Center/Left**: Tags (جدولة, مهم, عاجل) + duration (—) + date (30 مارس 2026) + status badge (تم اعتماد التوجيه) — all inline in a single row
+
+Currently the card uses a two-row layout (title+badge on row 1, tags+actions on row 2). We need to flatten this into one clean row.
+
+Also rename `قيد الانتظار` → `قيد المتابعة`.
 
 ### Changes
 
-#### 1. `DirectiveSection.tsx` — Accept `required` prop and pass it to child fields
-Add a `required?: boolean` prop (default `true`). Pass it to the three `FormField` components instead of hardcoded `required`.
+#### 1. `minister-directive-enums.ts` — Rename OPEN label
+Change line 42: `OPEN: 'قيد الانتظار'` → `OPEN: 'قيد المتابعة'`
 
-```tsx
-interface Props {
-  showMethod: boolean;
-  showFile: boolean;
-  showText: boolean;
-  required?: boolean;  // NEW
-}
+#### 2. `DirectiveCard.tsx` — Flatten to single-row horizontal layout
+Redesign the card to match the reference image:
+- Single horizontal flex row with `items-center`
+- Right side: status icon (CheckCircle2 or Clock) + title (truncated single line)
+- Center: metadata tags in a row (directive type, importance, priority, duration)
+- Left side: date + status badge
+- Remove the two-row layout, voice player stays below if present
+- Actions row stays below as a secondary row (only visible on hover or always visible)
+- Remove copy button from inline (or keep it subtle on hover)
 
-export function DirectiveSection({ showMethod, showFile, showText, required = true }: Props) {
-```
-
-- Line 40: `<FormField ... required={required} ...>` (طريقة التوجيه)
-- Line 55: `<FormField ... required={required} ...>` (التوجيه)
-- Line 78 (MeetingMinutesFileField): pass `required` prop down
-
-#### 2. `submitter/Step1Form.tsx` — Pass `required={!isSchedulerEdit}` to DirectiveSection
-
-```tsx
-<DirectiveSection
-  showMethod={visibility.directive_method}
-  showFile={visibility.previous_meeting_minutes_file_content}
-  showText={visibility.directive_text}
-  required={!isSchedulerEdit}
-/>
+The layout follows this horizontal flow (RTL):
+```text
+[✓ icon] [title...] ——— [جدولة] [مهم] [عاجل] [—] [30 مارس 2026] [تم اعتماد التوجيه ●]
 ```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DirectiveSection.tsx` | Add `required` prop, pass to all `FormField` children and `MeetingMinutesFileField` |
-| `submitter/Step1Form.tsx` | Pass `required={!isSchedulerEdit}` to `DirectiveSection` |
+| `minister-directive-enums.ts` | `OPEN: 'قيد المتابعة'` |
+| `DirectiveCard.tsx` | Flatten card to single-row horizontal layout matching reference image |
 
