@@ -1,12 +1,14 @@
+
+
 ## Plan: Fix Zod schema to accept null values in user fields
 
 ### Root Cause
-`meetingUserSchema` uses `z.string().optional()` which accepts `string | undefined` but **rejects `null`**. The API returns `null` for empty fields (e.g. `"objectGUID": null, "cn": null`), so Zod silently rejects the entire user object — the form thinks no valid user was selected.
+`meetingUserSchema` uses `z.string().optional()` which accepts `string | undefined` but **rejects `null`**. The API returns `null` for empty fields (e.g. `"objectGUID": null, "cn": null`), so Zod silently rejects the entire user object — the form thinks no valid user was selected and blocks submission.
 
-### Fix
+### Changes
 
-#### 1. `scheduler/schema.ts` — meetingUserSchema (lines 5–13)
-Change all fields to `.nullable().optional()` and add missing API fields:
+#### 1. `src/modules/shared/features/meeting-request-form/scheduler/schema.ts` (lines 5–13)
+Replace `meetingUserSchema` with all fields as `.nullable().optional()` and add missing API fields:
 
 ```ts
 const meetingUserSchema = z.object({
@@ -30,8 +32,8 @@ const meetingUserSchema = z.object({
 }).passthrough();
 ```
 
-#### 2. `submitter/schema.ts` — meetingUserSchema (lines 15–24)
-Same change, adding `name` field that already exists:
+#### 2. `src/modules/shared/features/meeting-request-form/submitter/schema.ts` (lines 15–24)
+Same change (keeping the extra `name` field that already exists):
 
 ```ts
 const meetingUserSchema = z.object({
@@ -57,10 +59,10 @@ const meetingUserSchema = z.object({
 ```
 
 ### Why this works
-- `.nullable()` adds `null` to the accepted types → `string | null | undefined`
+- `.nullable()` adds `null` to accepted types → `string | null | undefined`
+- Adding all known API columns prevents silent rejection of the user object
 - `.passthrough()` still allows any extra unknown fields
-- Adding explicit fields for all known API columns prevents silent rejection
-- No other code changes needed — the ID/label fallback chain handles display
+- The ID/label fallback chain already built handles display correctly
 
 ### Files changed
 
@@ -68,3 +70,4 @@ const meetingUserSchema = z.object({
 |---|---|
 | `scheduler/schema.ts` | All meetingUserSchema fields → `.nullable().optional()`, add missing API fields |
 | `submitter/schema.ts` | Same change |
+
