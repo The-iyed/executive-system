@@ -1,46 +1,39 @@
 
 
-## Plan: Make meeting date always required + directive fields optional for scheduler
-
-### Problem
-1. **موعد الاجتماع المقترح** (meeting date) is currently optional in the scheduler schema and conditionally required only for non-scheduler in the submitter schema. It should be **always required** in both forms.
-2. **Directive fields** (طريقة التوجيه, نص التوجيه, محضر الاجتماع) are validated as required when `is_based_on_directive === TRUE`, even when a scheduler officer is editing. They should be **optional for scheduler edits**.
+## Plan: Make meeting date always required + improve user display label fallback
 
 ### Changes
 
-#### 1. `scheduler/schema.ts` — make dates required
-In the `superRefine` block (after line 76), add validation that `meeting_start_date` and `meeting_end_date` are required:
+#### 1. `submitter/Step1Form.tsx` — Make date always required
+Line 71: change `required={!isSchedulerEdit}` to `required` (always true).
+
+#### 2. `userDisplayLabel.ts` — Fix name priority before mail
+Currently `getUserDisplayLabel` checks `mail` first. Reorder to prioritize name fields, and add `name`, `username`, `email`, `first_name`/`last_name` fallbacks before mail:
 
 ```ts
-if (!data.meeting_start_date) {
-  ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
-}
-if (!data.meeting_end_date) {
-  ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
+export function getUserDisplayLabel(user: Record<string, unknown>): string {
+  if (user.displayNameAR && typeof user.displayNameAR === 'string') return user.displayNameAR;
+  if (user.displayName && typeof user.displayName === 'string') return user.displayName;
+  if (user.displayNameEN && typeof user.displayNameEN === 'string') return user.displayNameEN;
+  if (user.givenName && typeof user.givenName === 'string') return user.givenName;
+  if (user.name && typeof user.name === 'string') return user.name;
+  if (user.username && typeof user.username === 'string') return user.username;
+  const first = user.first_name ?? user.givenName;
+  const last = user.last_name ?? user.sn;
+  const full = [first, last].filter(Boolean).join(' ').trim();
+  if (full) return full;
+  const mail = user.mail ?? user.email;
+  if (mail && typeof mail === 'string') return mail;
+  return String(user.cn ?? '');
 }
 ```
 
-Also update `SchedulerStep1Form.tsx` line 62 to set `required={true}` (or remove `required={false}`).
-
-#### 2. `submitter/schema.ts` — make dates always required
-Remove the `if (!data.is_scheduler_edit)` guard around the date validation (lines 109–115), so dates are required regardless of scheduler edit mode.
-
-#### 3. `submitter/schema.ts` — skip directive validation for scheduler edits
-Wrap the directive validation block (lines 141–152) with `if (!data.is_scheduler_edit)`:
-
-```ts
-if (!data.is_scheduler_edit && data.is_based_on_directive === BOOL.TRUE) {
-  // directive_method, file, text validations...
-}
-```
-
-This makes طريقة التوجيه, محضر الاجتماع, and نص التوجيه optional when a scheduler officer edits.
+Priority: `displayNameAR` > `displayName` > `displayNameEN` > `givenName` > `name` > `username` > `first_name + last_name` > `mail/email` > `cn`
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `scheduler/schema.ts` | Add required validation for `meeting_start_date` and `meeting_end_date` |
-| `scheduler/Step1Form.tsx` | Change `MeetingDateField` required prop to true |
-| `submitter/schema.ts` | Remove `is_scheduler_edit` guard from date validation; add `is_scheduler_edit` guard to directive validation |
+| `submitter/Step1Form.tsx` | Change `MeetingDateField` required prop to always `true` |
+| `userDisplayLabel.ts` | Reorder fallback chain: names before mail, add `name`/`username`/`first_name`+`last_name` |
 
