@@ -1,40 +1,45 @@
 
 
-## Plan: Fix empty submitter/owner display on edit form
+## Plan: Remove required asterisk (*) from directive fields for scheduler officer
 
-### Root Cause
-The edit API returns user objects with different field names (`id`, `name`, `ar_name`, `email`) than the directory search API (`objectGUID`, `displayNameAR`, `mail`). Current `getUserId()` and `getUserLabel()` only check directory-style fields.
+### Problem
+When a scheduler officer edits a meeting, the directive fields (طريقة التوجيه, محضر الاجتماع, التوجيه) show a red `*` asterisk even though they are not required for scheduler edits (we already made them optional in the schema).
 
 ### Changes
 
-#### 1. `searchUsersByEmail.ts` — Add edit-API fields to `UserSearchResult` type
-Add optional: `id`, `name`, `username`, `email`, `first_name`, `last_name`, `ar_name`
+#### 1. `DirectiveSection.tsx` — Accept `required` prop and pass it to child fields
+Add a `required?: boolean` prop (default `true`). Pass it to the three `FormField` components instead of hardcoded `required`.
 
-#### 2. `useManagerSearch.ts` — Expand `getUserId` with `id` first
-```ts
-export function getUserId(user: UserSearchResult): string {
-  return user.id || user.objectGUID || user.mail || user.email
-    || user.cn || user.displayName || user.givenName
-    || `user-${user.sn || ''}-${user.mobile || ''}`;
+```tsx
+interface Props {
+  showMethod: boolean;
+  showFile: boolean;
+  showText: boolean;
+  required?: boolean;  // NEW
 }
+
+export function DirectiveSection({ showMethod, showFile, showText, required = true }: Props) {
 ```
 
-#### 3. `useManagerSearch.ts` — Expand `getUserLabel`
-```ts
-export function getUserLabel(user: UserSearchResult): string {
-  return user.displayNameAR || user.ar_name
-    || user.displayName || user.name
-    || user.displayNameEN
-    || user.givenName || user.username
-    || [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
-    || user.mail || user.email || '—';
-}
+- Line 40: `<FormField ... required={required} ...>` (طريقة التوجيه)
+- Line 55: `<FormField ... required={required} ...>` (التوجيه)
+- Line 78 (MeetingMinutesFileField): pass `required` prop down
+
+#### 2. `submitter/Step1Form.tsx` — Pass `required={!isSchedulerEdit}` to DirectiveSection
+
+```tsx
+<DirectiveSection
+  showMethod={visibility.directive_method}
+  showFile={visibility.previous_meeting_minutes_file_content}
+  showText={visibility.directive_text}
+  required={!isSchedulerEdit}
+/>
 ```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `searchUsersByEmail.ts` | Add optional `id`, `name`, `username`, `email`, `first_name`, `last_name`, `ar_name` to `UserSearchResult` |
-| `useManagerSearch.ts` | `getUserId`: `id` first, then `objectGUID`, etc. `getUserLabel`: add `ar_name`, `name`, `username`, `first_name+last_name`, `email` |
+| `DirectiveSection.tsx` | Add `required` prop, pass to all `FormField` children and `MeetingMinutesFileField` |
+| `submitter/Step1Form.tsx` | Pass `required={!isSchedulerEdit}` to `DirectiveSection` |
 
