@@ -1,49 +1,27 @@
 
 
-## Plan: Move إعدادات الجدولة above المدعوون and style as standard field row
+## Plan: Change calendar start time from 00:00 to 07:00
 
 ### Problem
-إعدادات الجدولة is currently nested inside the المدعوون section. It should be its own standalone row above المدعوون, styled like other fields (icon+label on right, values on left).
+The weekly/daily calendar grid starts at 00:00, showing empty early-morning hours. User wants it to start at 07:00.
 
 ### Change
 
-#### `EventDetailModal.tsx`
-
-1. **Move the scheduling settings block** (lines 322–346) out of the المدعوون `<div>` (which starts at line 312) and place it as a new `<div>` between الموقع (ends line 310) and المدعوون (line 311), using the same row pattern as الموقع:
-
-```tsx
-{/* Scheduling Settings */}
-{display.meetingId && (
-  <div className="flex items-center justify-between px-4 py-3">
-    <div className="flex items-center gap-2.5 shrink-0">
-      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
-        <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-      </div>
-      <span className="text-[12px] font-semibold text-muted-foreground">إعدادات الجدولة</span>
-    </div>
-    <div className="flex items-center gap-4">
-      <div className="flex items-center gap-1.5">
-        <span className="text-[11px] text-muted-foreground">مبدئي:</span>
-        <span className="text-[11px] font-semibold text-foreground">
-          {display.isPreliminary ? 'نعم' : 'لا'}
-        </span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[11px] text-muted-foreground">البيانات مكتملة:</span>
-        <span className="text-[11px] font-semibold text-foreground">
-          {display.isDataComplete ? 'نعم' : 'لا'}
-        </span>
-      </div>
-    </div>
-  </div>
-)}
+#### `src/modules/UC02/components/MinisterFullCalendar.tsx` (line 352)
+Change:
+```ts
+slotMinTime="00:00:00"
+```
+To:
+```ts
+slotMinTime="07:00:00"
 ```
 
-2. **Remove the old scheduling settings block** from inside the المدعوون section (lines 322–346).
+Note: Events before 07:00 will still exist in the data but won't be visible in the grid. If you have meetings scheduled before 7 AM, they will be hidden from the calendar view.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Move إعدادات الجدولة to its own row above المدعوون, matching standard field layout |
+| `MinisterFullCalendar.tsx` | Change `slotMinTime` from `"00:00:00"` to `"07:00:00"` |
 
