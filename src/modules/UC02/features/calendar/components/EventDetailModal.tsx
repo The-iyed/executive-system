@@ -328,24 +328,18 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                         </div>
                         <span className="text-[12px] font-semibold text-muted-foreground">إعدادات الجدولة</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className={cn(
-                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
-                          display.isPreliminary
-                            ? 'bg-primary/10 text-primary border border-primary/25'
-                            : 'bg-muted/40 text-muted-foreground border border-border/40',
-                        )}>
-                          {display.isPreliminary && <Check className="w-3 h-3" strokeWidth={2.5} />}
-                          مبدئي
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] text-muted-foreground">مبدئي:</span>
+                          <span className="text-[11px] font-semibold text-foreground">
+                            {display.isPreliminary ? 'نعم' : 'لا'}
+                          </span>
                         </div>
-                        <div className={cn(
-                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors',
-                          display.isDataComplete
-                            ? 'bg-primary/10 text-primary border border-primary/25'
-                            : 'bg-muted/40 text-muted-foreground border border-border/40',
-                        )}>
-                          {display.isDataComplete && <Check className="w-3 h-3" strokeWidth={2.5} />}
-                          البيانات مكتملة
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] text-muted-foreground">البيانات مكتملة:</span>
+                          <span className="text-[11px] font-semibold text-foreground">
+                            {display.isDataComplete ? 'نعم' : 'لا'}
+                          </span>
                         </div>
                       </div>
                     </div>
