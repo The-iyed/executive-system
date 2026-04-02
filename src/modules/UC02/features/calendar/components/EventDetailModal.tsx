@@ -11,7 +11,7 @@ import { formatExactTimeFromIso, parseDateFromIso } from '../utils';
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const MONTH_NAMES = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const FONT = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
-const MAX_VISIBLE_INVITEES = 5;
+const MAX_VISIBLE_INVITEES = 10;
 
 const AVATAR_COLORS = [
   'bg-primary/15 text-primary',
