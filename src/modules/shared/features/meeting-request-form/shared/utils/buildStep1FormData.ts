@@ -18,7 +18,10 @@ export function buildStep1FormData(data: Step1Values): FormData {
     } else if (key === "agenda_items" && Array.isArray(value)) {
       fd.append(apiKey, JSON.stringify(value));
     } else if (typeof value === "object" && !(value instanceof Date)) {
-      fd.append(apiKey, JSON.stringify(value));
+      const cleaned = Object.fromEntries(
+        Object.entries(value as Record<string, unknown>).filter(([, v]) => v != null && v !== '')
+      );
+      fd.append(apiKey, JSON.stringify(cleaned));
     } else {
       fd.append(apiKey, String(value));
     }
