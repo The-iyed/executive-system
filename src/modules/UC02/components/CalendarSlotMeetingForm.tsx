@@ -354,22 +354,19 @@ function CalendarFormInner({
                     type="button"
                     onClick={() => field.onChange(!field.value)}
                     className={cn(
-                      'flex items-center gap-3 p-3 rounded-xl border transition-all text-right',
+                      'group relative flex flex-col items-center gap-1.5 flex-1 px-4 py-3.5 rounded-xl text-center transition-all duration-200 cursor-pointer select-none border',
                       field.value
-                        ? 'border-primary/30 bg-primary/5'
-                        : 'border-border/60 bg-background hover:bg-muted/30'
+                        ? 'bg-primary/8 border-primary/25 shadow-[0_0_0_1px_hsl(var(--primary)/0.1)]'
+                        : 'bg-muted/20 border-border/60 hover:bg-muted/40 hover:border-border'
                     )}
                   >
-                    <div className={cn(
-                      'w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors',
-                      field.value ? 'bg-primary border-primary' : 'border-border'
+                    <span className={cn(
+                      'flex items-center justify-center w-5 h-5 rounded-md border-[1.5px] transition-all duration-200',
+                      field.value ? 'bg-primary border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.12)]' : 'bg-background border-muted-foreground/25 group-hover:border-muted-foreground/40'
                     )}>
                       {field.value && <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[13px] font-semibold text-foreground">البيانات مكتملة</span>
-                      <span className="text-[11px] text-muted-foreground">جميع البيانات جاهزة</span>
-                    </div>
+                    </span>
+                    <span className={cn('text-[13px] font-bold transition-colors', field.value ? 'text-primary' : 'text-foreground')}>البيانات مكتملة</span>
                   </button>
                 )}
               />
