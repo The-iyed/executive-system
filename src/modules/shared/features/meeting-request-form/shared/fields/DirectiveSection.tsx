@@ -50,7 +50,7 @@ export function DirectiveSection({ showMethod, showFile, showText, required = tr
           </FormField>
         )}
 
-        {showFile && <MeetingMinutesFileField />}
+        {showFile && <MeetingMinutesFileField required={required} />}
 
         {showText && (
           <FormField label="التوجيه" name="directive_text" required errors={errors} colSpan={4}>
