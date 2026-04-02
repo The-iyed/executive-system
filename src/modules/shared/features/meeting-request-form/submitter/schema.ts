@@ -137,7 +137,7 @@ export const submitterStep1Schema = z.object({
   }
 
   /* ── Directive (only validate children when parent is active) ── */
-  if (data.is_based_on_directive === BOOL.TRUE) {
+  if (!data.is_scheduler_edit && data.is_based_on_directive === BOOL.TRUE) {
     if (!data.directive_method) {
       ctx.addIssue({ code: "custom", path: ["directive_method"], message: "طريقة التوجيه مطلوبة" });
     }
