@@ -72,10 +72,10 @@ export function ManagerSelect({
         )}
       >
         <span className={cn(!value && "text-muted-foreground")}>
-          {value ? selectedLabel : placeholder || "ابحث بالبريد الإلكتروني..."}
+          {value ? (selectedLabel || '—') : placeholder || "ابحث بالبريد الإلكتروني..."}
         </span>
         <div className="flex items-center gap-1">
-          {selectedId && (
+          {value && (
             <X
               className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer"
               onClick={(e) => {
