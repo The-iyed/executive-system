@@ -114,6 +114,21 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               صوتي
             </span>
           )}
+          {/* Action buttons — tag-sized, inline */}
+          {actions && actions.filter((a) => !a.hidden?.(directive)).map((action) => (
+            <button
+              key={action.id}
+              onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
+              className={cn(
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all whitespace-nowrap',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                action.className,
+              )}
+            >
+              {action.icon}
+              {action.label}
+            </button>
+          ))}
         </div>
 
         <span className="text-border">—</span>
@@ -123,26 +138,6 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           <Calendar className="size-3" />
           {formatDateArabic(directive.created_at)}
         </span>
-
-        {/* Action buttons — always visible, inline */}
-        {actions && actions.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0">
-            {actions.filter((a) => !a.hidden?.(directive)).map((action) => (
-              <button
-                key={action.id}
-                onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
-                className={cn(
-                  'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all whitespace-nowrap',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-                  action.className,
-                )}
-              >
-                {action.icon}
-                {action.label}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Status badge */}
         <span className={cn(
