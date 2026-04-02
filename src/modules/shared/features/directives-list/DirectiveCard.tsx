@@ -69,24 +69,24 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
       )}
       onClick={() => hasExpandableContent && setExpanded((v) => !v)}
     >
-      {/* Row 1: Always visible */}
-      <div className="flex items-center gap-3">
-        {/* Status icon */}
-        <div className={cn(
-          'flex size-7 shrink-0 items-center justify-center rounded-full',
-          isCompleted ? 'text-emerald-500' : 'text-muted-foreground',
-        )}>
-          {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
-        </div>
+      {/* Row 1: Split layout — title right, metadata left */}
+      <div className="flex items-center justify-between gap-3">
+        {/* Right group: icon + title + copy */}
+        <div className="min-w-0 flex-1 flex items-center gap-2">
+          <div className={cn(
+            'flex size-7 shrink-0 items-center justify-center rounded-full',
+            isCompleted ? 'text-emerald-500' : 'text-muted-foreground',
+          )}>
+            {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
+          </div>
 
-        {/* Title + Copy */}
-        <div className="min-w-0 flex items-center gap-1.5 flex-shrink">
           <h3 className={cn(
             'min-w-0 text-[13px] font-bold text-foreground leading-normal',
             expanded ? 'whitespace-normal' : 'truncate',
           )}>
             {directive.title}
           </h3>
+
           <button
             onClick={handleCopy}
             className="inline-flex items-center gap-1 shrink-0 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
@@ -97,7 +97,7 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           </button>
         </div>
 
-        {/* Metadata tags */}
+        {/* Left group: tags + date + badge + chevron */}
         <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
           {directive.directive_type && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -129,39 +129,36 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               صوتي
             </span>
           )}
+
+          <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
+            <Calendar className="size-3" />
+            {formatDateArabic(directive.created_at)}
+          </span>
+
+          <span className={cn(
+            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
+            badge.color,
+          )}>
+            {badge.label}
+            <span className={cn('size-1.5 rounded-full', badge.dot)} />
+          </span>
+
+          {hasExpandableContent && (
+            <ChevronDown className={cn(
+              'size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200',
+              expanded && 'rotate-180',
+            )} />
+          )}
         </div>
-
-        {/* Date */}
-        <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
-          <Calendar className="size-3" />
-          {formatDateArabic(directive.created_at)}
-        </span>
-
-        {/* Status badge */}
-        <span className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
-          badge.color,
-        )}>
-          {badge.label}
-          <span className={cn('size-1.5 rounded-full', badge.dot)} />
-        </span>
-
-        {/* Chevron */}
-        {hasExpandableContent && (
-          <ChevronDown className={cn(
-            'size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200',
-            expanded && 'rotate-180',
-          )} />
-        )}
       </div>
 
-      {/* Row 2: Expandable — actions + voice only */}
+      {/* Row 2: Expandable — actions + voice, aligned left */}
       {hasExpandableContent && (
         <div className={cn(
           'overflow-hidden transition-all duration-200 ease-in-out',
           expanded ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0',
         )}>
-          <div className="flex items-center gap-1.5 mr-10 flex-wrap">
+          <div className="flex justify-end items-center gap-1.5 flex-wrap">
             {visibleActions.map((action) => (
               <button
                 key={action.id}
@@ -179,8 +176,10 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           </div>
 
           {hasVoice && (
-            <div className="mt-2 mr-10 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
-              <VoicePlayer url={directive.voice_play_url!} compact />
+            <div className="mt-2 flex justify-end">
+              <div className="max-w-sm rounded-lg bg-muted/30 px-3 py-2">
+                <VoicePlayer url={directive.voice_play_url!} compact />
+              </div>
             </div>
           )}
         </div>
