@@ -1,73 +1,46 @@
 
 
-## Plan: Fix Zod schema to accept null values in user fields
+## Plan: Make meeting date always required + directive fields optional for scheduler
 
-### Root Cause
-`meetingUserSchema` uses `z.string().optional()` which accepts `string | undefined` but **rejects `null`**. The API returns `null` for empty fields (e.g. `"objectGUID": null, "cn": null`), so Zod silently rejects the entire user object — the form thinks no valid user was selected and blocks submission.
+### Problem
+1. **موعد الاجتماع المقترح** (meeting date) is currently optional in the scheduler schema and conditionally required only for non-scheduler in the submitter schema. It should be **always required** in both forms.
+2. **Directive fields** (طريقة التوجيه, نص التوجيه, محضر الاجتماع) are validated as required when `is_based_on_directive === TRUE`, even when a scheduler officer is editing. They should be **optional for scheduler edits**.
 
 ### Changes
 
-#### 1. `src/modules/shared/features/meeting-request-form/scheduler/schema.ts` (lines 5–13)
-Replace `meetingUserSchema` with all fields as `.nullable().optional()` and add missing API fields:
+#### 1. `scheduler/schema.ts` — make dates required
+In the `superRefine` block (after line 76), add validation that `meeting_start_date` and `meeting_end_date` are required:
 
 ```ts
-const meetingUserSchema = z.object({
-  id: z.string().nullable().optional(),
-  username: z.string().nullable().optional(),
-  email: z.string().nullable().optional(),
-  displayName: z.string().nullable().optional(),
-  displayNameAR: z.string().nullable().optional(),
-  displayNameEN: z.string().nullable().optional(),
-  givenName: z.string().nullable().optional(),
-  mail: z.string().nullable().optional(),
-  objectGUID: z.string().nullable().optional(),
-  cn: z.string().nullable().optional(),
-  sn: z.string().nullable().optional(),
-  title: z.string().nullable().optional(),
-  department: z.string().nullable().optional(),
-  company: z.string().nullable().optional(),
-  mobile: z.string().nullable().optional(),
-  manager: z.string().nullable().optional(),
-  is_disabled: z.number().nullable().optional(),
-}).passthrough();
+if (!data.meeting_start_date) {
+  ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
+}
+if (!data.meeting_end_date) {
+  ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
+}
 ```
 
-#### 2. `src/modules/shared/features/meeting-request-form/submitter/schema.ts` (lines 15–24)
-Same change (keeping the extra `name` field that already exists):
+Also update `SchedulerStep1Form.tsx` line 62 to set `required={true}` (or remove `required={false}`).
+
+#### 2. `submitter/schema.ts` — make dates always required
+Remove the `if (!data.is_scheduler_edit)` guard around the date validation (lines 109–115), so dates are required regardless of scheduler edit mode.
+
+#### 3. `submitter/schema.ts` — skip directive validation for scheduler edits
+Wrap the directive validation block (lines 141–152) with `if (!data.is_scheduler_edit)`:
 
 ```ts
-const meetingUserSchema = z.object({
-  id: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
-  username: z.string().nullable().optional(),
-  email: z.string().nullable().optional(),
-  displayName: z.string().nullable().optional(),
-  displayNameAR: z.string().nullable().optional(),
-  displayNameEN: z.string().nullable().optional(),
-  givenName: z.string().nullable().optional(),
-  mail: z.string().nullable().optional(),
-  objectGUID: z.string().nullable().optional(),
-  cn: z.string().nullable().optional(),
-  sn: z.string().nullable().optional(),
-  title: z.string().nullable().optional(),
-  department: z.string().nullable().optional(),
-  company: z.string().nullable().optional(),
-  mobile: z.string().nullable().optional(),
-  manager: z.string().nullable().optional(),
-  is_disabled: z.number().nullable().optional(),
-}).passthrough();
+if (!data.is_scheduler_edit && data.is_based_on_directive === BOOL.TRUE) {
+  // directive_method, file, text validations...
+}
 ```
 
-### Why this works
-- `.nullable()` adds `null` to accepted types → `string | null | undefined`
-- Adding all known API columns prevents silent rejection of the user object
-- `.passthrough()` still allows any extra unknown fields
-- The ID/label fallback chain already built handles display correctly
+This makes طريقة التوجيه, محضر الاجتماع, and نص التوجيه optional when a scheduler officer edits.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `scheduler/schema.ts` | All meetingUserSchema fields → `.nullable().optional()`, add missing API fields |
-| `submitter/schema.ts` | Same change |
+| `scheduler/schema.ts` | Add required validation for `meeting_start_date` and `meeting_end_date` |
+| `scheduler/Step1Form.tsx` | Change `MeetingDateField` required prop to true |
+| `submitter/schema.ts` | Remove `is_scheduler_edit` guard from date validation; add `is_scheduler_edit` guard to directive validation |
 
