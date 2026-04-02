@@ -1,29 +1,28 @@
 
 
-## Plan: Align title right, everything else left — RTL split layout
-
-### Problem
-Currently all elements flow sequentially in one flex row. The user wants the title (+ status icon + copy) pinned to the right side, and all metadata tags, date, status badge, and chevron pushed to the left side. Same for the collapsed actions row — actions should be left-aligned.
+## Plan: Move copy button before tags + add right padding to collapsed actions
 
 ### Changes to `DirectiveCard.tsx`
 
-#### Row 1: Split into right group + left group
-Use `justify-between` on the flex row. Wrap title section (icon + title + copy) in one group, and wrap tags + date + badge + chevron in another group.
+#### 1. Move copy button to the right of tags (before metadata tags)
+Currently the copy button sits after the status badge (line 137-144). Move it to be the **first element** in the left group (line 92), so it appears to the right of all tags in RTL.
+
+#### 2. Add right-side spacing to the actions row
+The collapsed actions row (line 161) currently uses `justify-end` with no indentation. Add `pr-9` (matching the icon+gap width) to indent actions from the right edge, creating visual separation from the title.
+
+### Layout
 
 ```text
-RTL layout:
-[right side: ✓ icon + title + نسخ] ←————→ [left side: tags + date + badge + ⌄]
+Row 1:
+[✓] [title...] ——— [نسخ] [جدولة] [مهم] [عاجل] [28 مارس] [مكتمل ●] [⌄]
+
+Row 2 (expanded):
+         [padding]                    [الأخذ بالتوجيه] [طلب إجتماع]
 ```
-
-- The title group (`min-w-0 flex-1`) stays on the right (start in RTL)
-- The metadata group (`shrink-0 flex`) stays on the left (end in RTL)
-
-#### Row 2: Actions aligned left
-Change actions container from `mr-10` to `flex justify-end` (which is left in RTL), so action buttons align under the metadata/tags side.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DirectiveCard.tsx` | Add `justify-between` to Row 1, group title vs metadata, align actions to left in Row 2 |
+| `DirectiveCard.tsx` | Move copy button before tags in left group; add `pr-9` to actions row |
 
