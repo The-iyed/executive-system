@@ -53,7 +53,7 @@ export function DirectiveSection({ showMethod, showFile, showText, required = tr
         {showFile && <MeetingMinutesFileField required={required} />}
 
         {showText && (
-          <FormField label="التوجيه" name="directive_text" required errors={errors} colSpan={4}>
+          <FormField label="التوجيه" name="directive_text" required={required} errors={errors} colSpan={4}>
             <Input placeholder="أدخل نص التوجيه" disabled={!textEditable} className={inputClass(!!errors.directive_text)} {...register("directive_text")} />
           </FormField>
         )}
