@@ -38,7 +38,7 @@ export function DirectiveSection({ showMethod, showFile, showText, required = tr
         </div>
 
         {showMethod && (
-          <FormField label="طريقة التوجيه" name="directive_method" required errors={errors} colSpan={4}>
+          <FormField label="طريقة التوجيه" name="directive_method" required={required} errors={errors} colSpan={4}>
             <Controller name="directive_method" control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange} disabled={!methodEditable}>
