@@ -1,33 +1,33 @@
 
 
-## Plan: Improve UX of action buttons (الأخذ بالتوجيه & طلب إجتماع)
+## Plan: Make action buttons tag-sized and highlighted
 
-### Current issues
-- Buttons are hidden by default, only appear on hover (`opacity-0 group-hover:opacity-100`) — poor discoverability on touch devices and unclear affordance
-- Small text (11px), minimal padding, no visual hierarchy between the two actions
-- No loading/disabled state feedback when clicked
-- Positioned in a separate row below content — disconnected from the card
+### Problem
+The action buttons (الأخذ بالتوجيه, طلب إجتماع) are currently larger than the metadata tags (`px-3.5 py-1.5 text-[12px] rounded-lg`). They should match the tag size and sit alongside them in the metadata tags row, with highlighted colors to stand out.
 
 ### Changes
 
-#### 1. `DirectiveCard.tsx` — Always-visible buttons inline with the card row
+#### 1. `DirectiveCard.tsx` — Resize buttons to tag size and move into tags row
 
-- **Remove hover-only visibility**: Change from `opacity-0 group-hover:opacity-100` to always visible
-- **Move buttons inline**: Place action buttons at the far left of the main row (before the status badge) instead of a separate secondary row
-- **Better sizing**: Increase padding to `px-3.5 py-1.5`, font to `text-[12px]`, rounded to `rounded-lg`
-- **Visual hierarchy**: "طلب إجتماع" (primary action) gets the branded teal gradient (`from-[#048F86] via-[#069E95] to-[#0BB5AA]`) with white text; "الأخذ بالتوجيه" gets an outlined style with subtle hover lift
-- **Micro-interactions**: Add `transition-all hover:scale-[1.03] active:scale-[0.97]` matching the project's standard button pattern
-- **Focus ring**: Add `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1` for accessibility
+- **Move** the action buttons block from after the date (line 128-145) into the metadata tags `<div>` (line 86-117), placing them right after the existing tags
+- **Shrink** button base classes from `px-3.5 py-1.5 rounded-lg text-[12px]` → `px-2 py-0.5 rounded-md text-[10px]` to match the tag dimensions exactly
+- **Icon size**: reduce from `w-3.5 h-3.5` to `size-3` (matching tag icons)
 
-#### 2. `DirectivesFeature.tsx` — Update button classNames
+#### 2. `DirectivesFeature.tsx` — Update action classNames for highlight colors
 
-- Update the `className` for "take" action: outlined style with hover lift (`border border-primary/30 text-primary bg-white hover:bg-primary/5 hover:shadow-sm hover:scale-[1.03] active:scale-[0.97]`)
-- Update the `className` for "meeting" action: teal gradient (`bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] text-white shadow-sm hover:shadow hover:scale-[1.03] active:scale-[0.97]`)
+- **الأخذ بالتوجيه** (take): `bg-primary/10 border border-primary/30 text-primary font-semibold hover:bg-primary/20 hover:scale-[1.03] active:scale-[0.97] transition-all`
+- **طلب إجتماع** (meeting): `bg-teal-500/10 border border-teal-500/30 text-teal-600 font-semibold hover:bg-teal-500/20 hover:scale-[1.03] active:scale-[0.97] transition-all`
+- Update icon classes from `w-3.5 h-3.5` to `size-3`
+
+### Layout result (RTL)
+```text
+[✓] [title...] [copy] [جدولة] [مهم] [عاجل] [الأخذ بالتوجيه] [طلب إجتماع] [صوتي] — [date] [status●]
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DirectiveCard.tsx` | Move actions inline, always visible, better sizing/padding/rounded, add focus ring and transition |
-| `DirectivesFeature.tsx` | Update action classNames with gradient primary + outlined secondary + micro-interactions |
+| `DirectiveCard.tsx` | Move actions into tags div, shrink to `px-2 py-0.5 rounded-md text-[10px]` |
+| `DirectivesFeature.tsx` | Update action classNames to highlighted tag-like colors, icon size to `size-3` |
 
