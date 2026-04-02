@@ -1,3 +1,5 @@
+
+
 ## Plan: Robust user selection fields with proper name priority and clean payload
 
 ### Problem
@@ -38,36 +40,13 @@ Export `getUserId` and `getUserLabel` for reuse.
 
 #### 2. `ManagerSelect.tsx` — use same ID/label resolution
 
-- Line 39: Change `selectedId` to use the same fallback chain:
-  ```ts
-  const selectedId = value ? (value.objectGUID || value.mail || value.cn || value.displayName || value.givenName || "") : "";
-  ```
-
-- Line 73-74: Show label from value directly when no option match:
-  ```ts
-  {value ? (selectedLabel || value.displayNameAR || value.displayName || value.displayNameEN || value.givenName || value.mail || '—') : placeholder || "ابحث بالبريد الإلكتروني..."}
-  ```
-
-- Line 77: Show X button when `value` exists (not just when `selectedId` is truthy):
-  ```ts
-  {value && (
-    <X ... onClick={() => onChange(null)} />
-  )}
-  ```
+- Change `selectedId` to use the same fallback chain
+- Show label from value directly when no option match found
+- Show X button when `value` exists (not just when `selectedId` is truthy)
 
 #### 3. `buildStep1FormData.ts` — clean null fields from user objects before sending
 
-When serializing `meeting_owner` or `submitter` objects, strip null/undefined fields to send a clean payload:
-
-```ts
-} else if (typeof value === "object" && !(value instanceof Date)) {
-  // Strip null/undefined values from nested objects
-  const cleaned = Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(([, v]) => v != null && v !== '')
-  );
-  fd.append(apiKey, JSON.stringify(cleaned));
-}
-```
+Strip null/undefined/empty fields from nested objects before `JSON.stringify` to send clean payloads.
 
 ### Files changed
 
@@ -76,3 +55,4 @@ When serializing `meeting_owner` or `submitter` objects, strip null/undefined fi
 | `useManagerSearch.ts` | Add `getUserId`/`getUserLabel` helpers with full fallback chain, export them |
 | `ManagerSelect.tsx` | Use same fallback chain for selectedId, show label/X when value exists |
 | `buildStep1FormData.ts` | Strip null/undefined fields from nested objects before JSON.stringify |
+
