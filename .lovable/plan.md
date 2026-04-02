@@ -1,24 +1,35 @@
 
 
-## Plan: Remove descriptions from ToggleCards and unify إعدادات الجدولة style
+## Plan: Change مبدئي and البيانات مكتملة from chips to label-value rows
 
 ### Problem
-Both مبدئي and البيانات مكتملة have sub-descriptions underneath them in three places. User wants these removed. Additionally, the calendar create form's إعدادات الجدولة should match the تأكيد الجدولة modal's ToggleCard style (centered, card-based).
+Currently in the calendar detail modal, مبدئي and البيانات مكتملة are displayed as styled chips (active/inactive). The user wants them shown as simple label + yes/no value pairs, consistent with other rows in the modal.
 
-### Changes
+### Change
 
-#### 1. `ScheduleConfirmDialog.tsx` — Remove description from ToggleCard
-- Remove the `description` prop and its rendering (line 77) from the `ToggleCard` component
-- Remove `description` from the two `<ToggleCard>` usages (lines 119, 125)
+#### `EventDetailModal.tsx` (lines 331–350)
+Replace the two chip `<div>`s with two label-value pairs using نعم/لا:
 
-#### 2. `CalendarSlotMeetingForm.tsx` — Remove descriptions + match modal style
-- Remove the description lines (348 "يتطلب بروتوكول" and 374 "جميع البيانات جاهزة")
-- Restyle both toggle buttons to match `ScheduleConfirmDialog`'s centered ToggleCard layout: vertical flex-col centered with checkbox on top, label below, no description
+```tsx
+<div className="flex items-center gap-4">
+  <div className="flex items-center gap-1.5">
+    <span className="text-[11px] text-muted-foreground">مبدئي:</span>
+    <span className="text-[11px] font-semibold text-foreground">
+      {display.isPreliminary ? 'نعم' : 'لا'}
+    </span>
+  </div>
+  <div className="flex items-center gap-1.5">
+    <span className="text-[11px] text-muted-foreground">البيانات مكتملة:</span>
+    <span className="text-[11px] font-semibold text-foreground">
+      {display.isDataComplete ? 'نعم' : 'لا'}
+    </span>
+  </div>
+</div>
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `ScheduleConfirmDialog.tsx` | Remove `description` prop/rendering from `ToggleCard`, remove description from both usages |
-| `CalendarSlotMeetingForm.tsx` | Remove description text, restyle toggles to centered card layout matching the modal |
+| `EventDetailModal.tsx` | Replace chip-style display with label: نعم/لا format for both fields |
 
