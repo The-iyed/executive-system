@@ -90,6 +90,14 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
 
         {/* Left group: tags + date + badge + chevron */}
         <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1 shrink-0 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
+            title="نسخ المحتوى"
+          >
+            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+            نسخ
+          </button>
           {directive.directive_type && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <FileText className="size-3" />
@@ -134,14 +142,6 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
             <span className={cn('size-1.5 rounded-full', badge.dot)} />
           </span>
 
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1 shrink-0 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
-            title="نسخ المحتوى"
-          >
-            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-            نسخ
-          </button>
 
           {hasExpandableContent && (
             <ChevronDown className={cn(
@@ -158,7 +158,7 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           'overflow-hidden transition-all duration-200 ease-in-out',
           expanded ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0',
         )}>
-          <div className="flex justify-end items-center gap-1.5 flex-wrap">
+          <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9">
             {visibleActions.map((action) => (
               <button
                 key={action.id}
