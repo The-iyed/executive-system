@@ -1,36 +1,29 @@
 
 
-## Plan: Move copy button (icon + label) next to title, keep tags in Row 1, only actions in collapsible
+## Plan: Align title right, everything else left — RTL split layout
+
+### Problem
+Currently all elements flow sequentially in one flex row. The user wants the title (+ status icon + copy) pinned to the right side, and all metadata tags, date, status badge, and chevron pushed to the left side. Same for the collapsed actions row — actions should be left-aligned.
 
 ### Changes to `DirectiveCard.tsx`
 
-#### 1. Move copy button inline next to the title (with icon + label "نسخ")
-Place the copy button immediately after the title text in Row 1. It keeps both the icon and the "نسخ" label, styled as a small tag (`px-2 py-0.5 text-[10px]`).
-
-#### 2. Move metadata tags to Row 1
-Move all metadata tags (جدولة, مهم, عاجل, duration, صوتي) from the collapsible section into the main row, placed between the copy button and the date.
-
-#### 3. Title: truncate when collapsed, full wrap when expanded
-Change title class from always `truncate` to conditional: `truncate` when collapsed, `whitespace-normal` when expanded.
-
-#### 4. Collapsible section: only action buttons + voice player
-Row 2 will only contain the action buttons (الأخذ بالتوجيه, طلب إجتماع) and voice player. Update `hasExpandableContent` to `visibleActions.length > 0 || hasVoice`.
-
-### Layout
+#### Row 1: Split into right group + left group
+Use `justify-between` on the flex row. Wrap title section (icon + title + copy) in one group, and wrap tags + date + badge + chevron in another group.
 
 ```text
-Collapsed:
-[✓] [title (truncated)...] [📋 نسخ] [جدولة] [مهم] [عاجل] [28 مارس] [مكتمل ●] [⌄]
-
-Expanded:
-[✓] [title (full wrap)]    [📋 نسخ] [جدولة] [مهم] [عاجل] [28 مارس] [مكتمل ●] [⌃]
-    [الأخذ بالتوجيه] [طلب إجتماع]
-    [🔊 voice player]
+RTL layout:
+[right side: ✓ icon + title + نسخ] ←————→ [left side: tags + date + badge + ⌄]
 ```
+
+- The title group (`min-w-0 flex-1`) stays on the right (start in RTL)
+- The metadata group (`shrink-0 flex`) stays on the left (end in RTL)
+
+#### Row 2: Actions aligned left
+Change actions container from `mr-10` to `flex justify-end` (which is left in RTL), so action buttons align under the metadata/tags side.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DirectiveCard.tsx` | Move copy (icon+label) next to title in Row 1, move tags to Row 1, title conditional truncate, collapsible only has actions+voice |
+| `DirectiveCard.tsx` | Add `justify-between` to Row 1, group title vs metadata, align actions to left in Row 2 |
 
