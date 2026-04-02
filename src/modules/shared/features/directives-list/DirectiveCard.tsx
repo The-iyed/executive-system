@@ -59,7 +59,6 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
 
   return (
     <div className="group px-5 py-3.5 transition-colors hover:bg-muted/20">
-      {/* Single row: icon + title — tags — date — badge */}
       <div className="flex items-center gap-3">
         {/* Status icon */}
         <div className={cn(
@@ -69,12 +68,12 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
         </div>
 
-        {/* Title (takes available space) */}
+        {/* Title */}
         <h3 className="min-w-0 flex-1 truncate text-[13px] font-bold text-foreground leading-normal">
           {directive.title}
         </h3>
 
-        {/* Copy button (subtle) */}
+        {/* Copy */}
         <button
           onClick={handleCopy}
           className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-muted/60 transition-all"
@@ -117,7 +116,6 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           )}
         </div>
 
-        {/* Separator */}
         <span className="text-border">—</span>
 
         {/* Date */}
@@ -125,6 +123,26 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           <Calendar className="size-3" />
           {formatDateArabic(directive.created_at)}
         </span>
+
+        {/* Action buttons — always visible, inline */}
+        {actions && actions.length > 0 && (
+          <div className="flex items-center gap-2 shrink-0">
+            {actions.filter((a) => !a.hidden?.(directive)).map((action) => (
+              <button
+                key={action.id}
+                onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
+                className={cn(
+                  'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all whitespace-nowrap',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                  action.className,
+                )}
+              >
+                {action.icon}
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Status badge */}
         <span className={cn(
@@ -136,29 +154,10 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
         </span>
       </div>
 
-      {/* Voice player (secondary row) */}
+      {/* Voice player */}
       {hasVoice && (
         <div className="mt-2 mr-10 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
           <VoicePlayer url={directive.voice_play_url!} compact />
-        </div>
-      )}
-
-      {/* Actions (secondary row, visible on hover) */}
-      {actions && actions.length > 0 && (
-        <div className="flex items-center justify-end gap-1.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {actions.filter((a) => !a.hidden?.(directive)).map((action) => (
-            <button
-              key={action.id}
-              onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
-              className={cn(
-                'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all whitespace-nowrap',
-                action.className,
-              )}
-            >
-              {action.icon}
-              {action.label}
-            </button>
-          ))}
         </div>
       )}
     </div>
