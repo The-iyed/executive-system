@@ -39,7 +39,7 @@ export const DIRECTIVE_STATUS_LABELS: Record<DirectiveStatus, string> = {
 };
 
 export const SCHEDULING_OFFICER_STATUS_LABELS: Record<SchedulingOfficerStatus, string> = {
-  OPEN: 'قيد الانتظار',
+  OPEN: 'قيد المتابعة',
   CLOSED: 'مكتمل',
 };
 
