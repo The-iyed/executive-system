@@ -11,7 +11,7 @@ import { formatExactTimeFromIso, parseDateFromIso } from '../utils';
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const MONTH_NAMES = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const FONT = { fontFamily: "'IBM Plex Sans Arabic', 'Frutiger LT Arabic', sans-serif" } as const;
-const MAX_VISIBLE_INVITEES = 5;
+const MAX_VISIBLE_INVITEES = 10;
 
 const AVATAR_COLORS = [
   'bg-primary/15 text-primary',
@@ -183,7 +183,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                   <Calendar className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 </div>
                 <div className="flex flex-col min-w-0 gap-1">
-                  <h3 className="text-foreground font-bold text-[16px] leading-6 line-clamp-2">{display.title}</h3>
+                  <h3 className="text-foreground font-bold text-[16px] leading-6 break-words">{display.title}</h3>
                   {display.is_internal !== undefined && (
                     <span className={cn(
                       'text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit',
@@ -222,11 +222,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     <span className="text-[12px] font-semibold text-muted-foreground">المنظم</span>
                   </div>
                   <div className="flex flex-col items-end min-w-0">
-                    <span className="text-[13px] font-semibold text-foreground truncate max-w-[260px]">
+                    <span className="text-[13px] font-semibold text-foreground truncate max-w-[300px]">
                       {display.organizerName || display.organizerEmail || '—'}
                     </span>
                     {display.organizerEmail && display.organizerName && (
-                      <span className="text-[11px] text-muted-foreground truncate max-w-[260px]">
+                      <span className="text-[11px] text-muted-foreground truncate max-w-[300px] break-all">
                         {display.organizerEmail}
                       </span>
                     )}
@@ -299,7 +299,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[13px] font-medium text-foreground truncate max-w-[260px]">
+                        <span className="text-[13px] font-medium text-foreground truncate max-w-[300px] break-all">
                           {display.locationOrLink}
                         </span>
                       )
@@ -345,8 +345,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                     </span>
                   </div>
                   {display.invitees.length > 0 ? (
-                    <div className="flex flex-col divide-y divide-border/30">
-                      {display.invitees.slice(0, 5).map((a, idx) => (
+                    <div className="flex flex-col divide-y divide-border/30 max-h-[280px] overflow-y-auto pr-1 -mr-1">
+                      {display.invitees.map((a, idx) => (
                         <div key={`${a.name}-${idx}`} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
                           <div
                             className={cn(
@@ -356,21 +356,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                           >
                             <span className="text-[10px] font-bold">{getInitials(a.name || a.email || '?')}</span>
                           </div>
-                          <div className="flex flex-col min-w-0">
+                          <div className="flex flex-col min-w-0 max-w-[280px]">
                             <span className="text-[13px] font-semibold text-foreground truncate">{a.name || '—'}</span>
                             {a.email && (
-                              <span className="text-[11px] text-muted-foreground truncate">{a.email}</span>
+                              <span className="text-[11px] text-muted-foreground truncate break-all">{a.email}</span>
                             )}
                           </div>
                         </div>
                       ))}
-                      {display.invitees.length > 5 && (
-                        <div className="pt-2.5">
-                          <span className="text-[11px] font-semibold text-primary">
-                            +{display.invitees.length - 5} آخرين
-                          </span>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <span className="text-[12px] text-muted-foreground">—</span>
