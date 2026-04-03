@@ -50,14 +50,8 @@ export async function bootstrapAuth(): Promise<User | null> {
     if (existingUser && !existingUser.expired) {
       return existingUser;
     }
-    if (existingUser?.refresh_token) {
-      try {
-        const user = await userManager.signinSilent();
-        if (user) return user;
-      } catch {
-        // refresh token expired or backend doesn't support it — fall through
-      }
-    }
+    const user = await userManager.signinSilent();
+    if (user) return user;
     return null;
   } catch {
     return null;
@@ -71,58 +65,6 @@ export async function initiateLogin(): Promise<void> {
     console.error('Error initiating login:', error);
     throw error;
   }
-}
-
-const PRE_AUTH_PATH_KEY = 'sanad_pre_auth_path';
-
-export function saveCurrentPath(): void {
-  try {
-    const path = window.location.pathname + window.location.search;
-    if (path && path !== '/' && !path.startsWith('/callback') && !path.startsWith('/silent-renew')) {
-      sessionStorage.setItem(PRE_AUTH_PATH_KEY, path);
-    }
-  } catch { /* ignore */ }
-}
-
-export function consumeSavedPath(): string | null {
-  try {
-    const path = sessionStorage.getItem(PRE_AUTH_PATH_KEY);
-    sessionStorage.removeItem(PRE_AUTH_PATH_KEY);
-    return path;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Renew token without iframe. Strategy:
- * 1. If user has a refresh_token → signinSilent uses token endpoint (HTTP only, no iframe).
- * 2. If no refresh_token or signinSilent fails → full redirect to IdP.
- *    SSO session is still alive so IdP returns immediately with a new code (no login form).
- */
-let renewPromise: Promise<User | null> | null = null;
-
-export async function renewToken(): Promise<User | null> {
-  if (renewPromise) return renewPromise;
-
-  renewPromise = (async () => {
-    const existing = await userManager.getUser();
-    if (existing?.refresh_token) {
-      try {
-        const renewed = await userManager.signinSilent();
-        return renewed;
-      } catch (e) {
-        console.warn('[Auth] Refresh token renewal failed, falling back to redirect:', e);
-      }
-    }
-    saveCurrentPath();
-    await userManager.signinRedirect();
-    return null;
-  })().finally(() => {
-    renewPromise = null;
-  });
-
-  return renewPromise;
 }
 
 export function getStoredCodeVerifier(state: string | null): string | undefined {
@@ -215,6 +157,82 @@ export async function exchangeCodeForToken(
   return await response.json();
 }
 
+/**
+ * Calls backend `POST /api/auth/refresh`, which should proxy to IdP
+ * `{SSO_AUTHORITY_URL}/connect/token` with:
+ * - grant_type=refresh_token
+ * - refresh_token (from this request body)
+ * - client_id (from body; backend may default to SSO_CLIENT_ID if omitted — we send VITE_SSO_CLIENT_ID)
+ * - client_secret only on the server if configured (never in the SPA)
+ * - scope optional, forwarded if present
+ */
+export async function refreshAccessToken(): Promise<User | null> {
+  const currentUser = await userManager.getUser();
+  if (!currentUser?.refresh_token) return null;
+
+  const clientId = getEnv('VITE_SSO_CLIENT_ID', 'Outbalady.LegislationLibrary');
+  const backendRefreshEndpoint = `${EXECUTION_SYSTEM_BASE_URL}/api/auth/refresh`;
+
+  const formData = new URLSearchParams();
+  formData.set('grant_type', 'refresh_token');
+  formData.set('client_id', clientId);
+  formData.set('refresh_token', currentUser.refresh_token);
+  if (currentUser.scope) {
+    formData.set('scope', currentUser.scope);
+  }
+
+  const response = await fetch(backendRefreshEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+      ...getApiTimezoneHeaders(),
+    },
+    body: formData.toString(),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Backend refresh failed: ${response.status} ${errorText}`);
+  }
+
+  const tokenResponse = (await response.json()) as {
+    access_token: string;
+    id_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    token_type?: string;
+    scope?: string;
+    session_state?: string;
+  };
+
+  const expiresAt = tokenResponse.expires_in
+    ? Math.floor(Date.now() / 1000) + tokenResponse.expires_in
+    : currentUser.expires_at;
+
+  const profile = tokenResponse.id_token
+    ? (profileFromIdToken(tokenResponse.id_token) as unknown as User['profile'])
+    : currentUser.profile;
+
+  if (!profile.sub) profile.sub = '';
+
+  const refreshedUser = new User({
+    id_token: tokenResponse.id_token ?? currentUser.id_token ?? '',
+    access_token: tokenResponse.access_token,
+    refresh_token: tokenResponse.refresh_token ?? currentUser.refresh_token,
+    token_type: tokenResponse.token_type || currentUser.token_type || 'Bearer',
+    scope: tokenResponse.scope ?? currentUser.scope ?? '',
+    session_state: tokenResponse.session_state || currentUser.session_state || '',
+    profile,
+    expires_at: expiresAt,
+    userState: (currentUser as unknown as { userState?: unknown }).userState ?? '',
+  });
+
+  await userManager.storeUser(refreshedUser);
+  return refreshedUser;
+}
+
 export async function handleCallback(): Promise<CallbackResult | null> {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -229,8 +247,9 @@ export async function handleCallback(): Promise<CallbackResult | null> {
         state: stateFromUrl ?? undefined,
         code_verifier: codeVerifierFromStorage,
       }).then(async (tokenResponse) => {
+        // oidc-client-ts User.expires_at is Unix seconds (not ms).
         const expiresAt = tokenResponse.expires_in
-          ? Date.now() + tokenResponse.expires_in * 1000
+          ? Math.floor(Date.now() / 1000) + tokenResponse.expires_in
           : undefined;
         const profile = profileFromIdToken(tokenResponse.id_token) as unknown as User['profile'];
         if (!profile.sub) profile.sub = '';
@@ -294,7 +313,7 @@ export async function handleSilentRenew(): Promise<void> {
           code_verifier: codeVerifierFromStorage,
         });
         const expiresAt = tokenResponse.expires_in
-          ? Date.now() + tokenResponse.expires_in * 1000
+          ? Math.floor(Date.now() / 1000) + tokenResponse.expires_in
           : undefined;
         const profile = profileFromIdToken(tokenResponse.id_token) as unknown as User['profile'];
         if (!profile.sub) profile.sub = '';

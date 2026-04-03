@@ -115,13 +115,13 @@ const oidcConfig = {
     return getRedirectUri();
   },
   response_type: 'code',
+  // offline_access is required for refresh_token issuance.
   scope: 'openid profile email offline_access',
-  automaticSilentRenew: false,
+  automaticSilentRenew: true,
   loadUserInfo: false,
   filterProtocolClaims: true,
   silentRequestTimeout: 10000,
   revokeAccessTokenOnSignout: true,
-  accessTokenExpiringNotificationTimeInSeconds: 120,
   stateStore: createStateStoreWithPkceBackup(),
   metadata,
 };
