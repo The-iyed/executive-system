@@ -3,7 +3,7 @@ import { clearAllBrowserStorage } from "./token";
 import { getAuthToken } from "./tokenGetter";
 import { EXECUTION_SYSTEM_BASE_URL } from "@/lib/env";
 import { getBrowserTimezone } from "@/lib/api/apiTimezone";
-import { isSsoEnabled, renewToken } from "@/lib/auth";
+import { isSsoEnabled, initiateLogin, refreshAccessToken } from "@/lib/auth";
 
 const baseURL = EXECUTION_SYSTEM_BASE_URL;
 const headers = {
@@ -17,9 +17,20 @@ const axiosInstance = axios.create({
   // withCredentials: true,
 });
 
-/** Single in-flight renewal shared across all concurrent 401s. */
-let renewPromise: Promise<unknown> | null = null;
-let renewWaiters = 0;
+/** Single in-flight refresh call shared by concurrent 401s. */
+let refreshPromise: Promise<unknown> | null = null;
+/** Track concurrent waiters so we clear shared refresh only after the batch settles. */
+let refreshWaiters = 0;
+
+let ssoReloginPromise: Promise<void> | null = null;
+
+function ensureSsoRelogin(): void {
+  ssoReloginPromise ??= initiateLogin()
+    .catch(() => {})
+    .finally(() => {
+      ssoReloginPromise = null;
+    });
+}
 
 axiosInstance.interceptors.request.use(
   async (config) => {
@@ -47,24 +58,30 @@ axiosInstance.interceptors.response.use(
     if (error?.response?.status === 401) {
       if (isSsoEnabled()) {
         if (originalRequest?._retry) {
+          ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         }
 
-        renewWaiters += 1;
+        refreshWaiters += 1;
         try {
-          renewPromise ??= renewToken();
-          const renewed = await renewPromise;
-          if (renewed && originalRequest) {
+          refreshPromise ??= refreshAccessToken();
+          const refreshed = await refreshPromise;
+          if (!refreshed) {
+            throw new Error("No refresh token available");
+          }
+          if (originalRequest) {
             originalRequest._retry = true;
             return axiosInstance(originalRequest);
           }
+          ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         } catch {
+          ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         } finally {
-          renewWaiters -= 1;
-          if (renewWaiters === 0) {
-            renewPromise = null;
+          refreshWaiters -= 1;
+          if (refreshWaiters === 0) {
+            refreshPromise = null;
           }
         }
       }
