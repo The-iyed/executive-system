@@ -8,11 +8,26 @@ export interface ManagerOption {
   user: UserSearchResult;
 }
 
+export function getUserId(user: UserSearchResult): string {
+  return user.id || user.objectGUID || user.mail || user.email
+    || user.cn || user.displayName || user.givenName
+    || `user-${user.sn || ''}-${user.mobile || ''}`;
+}
+
+export function getUserLabel(user: UserSearchResult): string {
+  return user.displayNameAR || user.ar_name
+    || user.displayName || user.name
+    || user.displayNameEN
+    || user.givenName || user.username
+    || [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
+    || user.mail || user.email || '—';
+}
+
 function toOption(user: UserSearchResult): ManagerOption {
   return {
-    value: user.objectGUID || user.mail || user.cn || '',
-    label: user.displayName || user.mail,
-    subtitle: user.mail,
+    value: getUserId(user),
+    label: getUserLabel(user),
+    subtitle: user.mail || user.title || '—',
     user,
   };
 }
@@ -29,7 +44,7 @@ export function useManagerSearch(search: string, enabled: boolean) {
     enabled,
     staleTime: 30_000,
     select: (data) => ({
-      options: data.pages.flatMap((p) => p.items.map(toOption)),
+      options: data.pages.flatMap((p) => p.items.map(toOption)).filter((o) => o.value),
       hasMore: data.pages[data.pages.length - 1]?.hasMore ?? false,
     }),
   });
