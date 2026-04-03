@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Clock, CheckCircle2, FileText, Volume2, AlertTriangle,
-  Zap, Copy, Check, Calendar,
+  Zap, Copy, Check, Calendar, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/ui';
@@ -41,6 +41,7 @@ const STATUS_BADGE: Record<string, { color: string; dot: string; label: string }
 
 export function DirectiveCard({ directive, statusField = 'scheduling_officer_status', actions }: DirectiveCardProps) {
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const statusValue = statusField === 'status' ? directive.status : directive.scheduling_officer_status;
   const badge = STATUS_BADGE[statusValue] || STATUS_BADGE.OPEN;
@@ -48,6 +49,9 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   const hasVoice = !!directive.voice_play_url;
   const isUrgent = directive.priority === 'URGENT' || directive.priority === 'VERY_URGENT';
   const isImportant = directive.importance === 'IMPORTANT' || directive.importance === 'VERY_IMPORTANT';
+
+  const visibleActions = actions?.filter((a) => !a.hidden?.(directive)) || [];
+  const hasExpandableContent = visibleActions.length > 0 || hasVoice;
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -58,68 +62,46 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   };
 
   return (
-    <div className="group px-5 py-4 transition-colors hover:bg-muted/20">
-      {/* Row 1: icon + title + copy (right) — badge (left) */}
-      <div className="flex items-start justify-between gap-4">
-        {/* Right: icon + title + copy */}
-        <div className="flex items-start gap-3 min-w-0 flex-1">
+    <div
+      className={cn(
+        'group px-5 py-3.5 transition-colors cursor-pointer select-none',
+        expanded ? 'bg-muted/30' : 'hover:bg-muted/20',
+      )}
+      onClick={() => hasExpandableContent && setExpanded((v) => !v)}
+    >
+      {/* Row 1: Split layout — title right, metadata left */}
+      <div className="flex items-center justify-between gap-3">
+        {/* Right group: icon + title + copy */}
+        <div className="min-w-0 flex-1 flex items-center gap-2">
           <div className={cn(
-            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full',
+            'flex size-7 shrink-0 items-center justify-center rounded-full',
             isCompleted ? 'text-emerald-500' : 'text-muted-foreground',
           )}>
-            {isCompleted ? <CheckCircle2 className="size-5" /> : <Clock className="size-5" />}
+            {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-[14px] font-bold text-foreground leading-relaxed line-clamp-2">
-                {directive.title}
-              </h3>
-              <button
-                onClick={handleCopy}
-                className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
-                title="نسخ المحتوى"
-              >
-                {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-              </button>
-            </div>
-            <p className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-              <Calendar className="size-3" />
-              {formatDateArabic(directive.created_at)}
-            </p>
-          </div>
+
+          <h3 className={cn(
+            'min-w-0 text-[13px] font-bold text-foreground leading-normal',
+            expanded ? 'whitespace-normal' : 'truncate',
+          )}>
+            {directive.title}
+          </h3>
         </div>
 
-        {/* Left: badge */}
-        <span className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
-          badge.color,
-        )}>
-          <span className={cn('size-1.5 rounded-full', badge.dot)} />
-          {badge.label}
-        </span>
-      </div>
-
-      {/* Voice */}
-      {hasVoice && (
-        <div className="mt-2 mr-11 max-w-sm rounded-lg bg-muted/30 px-3 py-2">
-          <VoicePlayer url={directive.voice_play_url!} compact />
-        </div>
-      )}
-
-      {/* Row 2: tags (right) — actions (left) */}
-      <div className="flex items-center justify-between gap-4 mt-2 mr-11">
-        {/* Tags */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Left group: tags + date + badge + chevron */}
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1 shrink-0 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
+            title="نسخ المحتوى"
+          >
+            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+            نسخ
+          </button>
           {directive.directive_type && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200/60 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <FileText className="size-3" />
               {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
-            </span>
-          )}
-          {isUrgent && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/80 border border-rose-200/50 px-2 py-0.5 text-[10px] font-semibold text-rose-500">
-              <AlertTriangle className="size-3" />
-              {PRIORITY_LABELS[directive.priority!]}
             </span>
           )}
           {isImportant && (
@@ -128,8 +110,14 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               {IMPORTANCE_LABELS[directive.importance!]}
             </span>
           )}
+          {isUrgent && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/80 border border-rose-200/50 px-2 py-0.5 text-[10px] font-semibold text-rose-500">
+              <AlertTriangle className="size-3" />
+              {PRIORITY_LABELS[directive.priority!]}
+            </span>
+          )}
           {directive.due_duration_enabled && directive.due_duration_value && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 border border-slate-200/60 px-2 py-0.5 text-[10px] text-slate-500">
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground">
               <Clock className="size-3" />
               {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
             </span>
@@ -140,17 +128,44 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               صوتي
             </span>
           )}
-        </div>
 
-        {/* Actions (bottom left) */}
-        {actions && actions.length > 0 && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            {actions.filter((a) => !a.hidden?.(directive)).map((action) => (
+          <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
+            <Calendar className="size-3" />
+            {formatDateArabic(directive.created_at)}
+          </span>
+
+          <span className={cn(
+            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
+            badge.color,
+          )}>
+            {badge.label}
+            <span className={cn('size-1.5 rounded-full', badge.dot)} />
+          </span>
+
+
+          {hasExpandableContent && (
+            <ChevronDown className={cn(
+              'size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200',
+              expanded && 'rotate-180',
+            )} />
+          )}
+        </div>
+      </div>
+
+      {/* Row 2: Expandable — actions + voice, aligned left */}
+      {hasExpandableContent && (
+        <div className={cn(
+          'overflow-hidden transition-all duration-200 ease-in-out',
+          expanded ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0',
+        )}>
+          <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9 pl-9">
+            {visibleActions.map((action) => (
               <button
                 key={action.id}
                 onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
                 className={cn(
-                  'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all whitespace-nowrap',
+                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all whitespace-nowrap',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                   action.className,
                 )}
               >
@@ -159,8 +174,16 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
               </button>
             ))}
           </div>
-        )}
-      </div>
+
+          {hasVoice && (
+            <div className="mt-2 flex justify-end">
+              <div className="max-w-sm rounded-lg bg-muted/30 px-3 py-2">
+                <VoicePlayer url={directive.voice_play_url!} compact />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

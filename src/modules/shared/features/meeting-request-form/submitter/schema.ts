@@ -13,14 +13,24 @@ import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from ".
 /* ─── Submitter Step 1 Schema ─── */
 
 const meetingUserSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().optional(),
-  username: z.string().optional(),
-  email: z.string().optional(),
-  displayName: z.string().optional(),
-  givenName: z.string().optional(),
-  mail: z.string().optional(),
-  objectGUID: z.string().optional(),
+  id: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+  username: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  displayName: z.string().nullable().optional(),
+  displayNameAR: z.string().nullable().optional(),
+  displayNameEN: z.string().nullable().optional(),
+  givenName: z.string().nullable().optional(),
+  mail: z.string().nullable().optional(),
+  objectGUID: z.string().nullable().optional(),
+  cn: z.string().nullable().optional(),
+  sn: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  department: z.string().nullable().optional(),
+  company: z.string().nullable().optional(),
+  mobile: z.string().nullable().optional(),
+  manager: z.string().nullable().optional(),
+  is_disabled: z.number().nullable().optional(),
 }).passthrough();
 
 export const submitterStep1Schema = z.object({
@@ -96,13 +106,11 @@ export const submitterStep1Schema = z.object({
   if ([MeetingNature.SEQUENTIAL, MeetingNature.PERIODIC].includes(data.meeting_nature) && !data.previous_meeting_id) {
     ctx.addIssue({ code: "custom", path: ["previous_meeting_id"], message: "الاجتماع السابق مطلوب" });
   }
-  if (!data.is_scheduler_edit) {
-    if (!data.meeting_start_date) {
-      ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
-    }
-    if (!data.meeting_end_date) {
-      ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
-    }
+  if (!data.meeting_start_date) {
+    ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
+  }
+  if (!data.meeting_end_date) {
+    ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
   }
 
   /* ── Agenda ── */
@@ -129,7 +137,7 @@ export const submitterStep1Schema = z.object({
   }
 
   /* ── Directive (only validate children when parent is active) ── */
-  if (data.is_based_on_directive === BOOL.TRUE) {
+  if (!data.is_scheduler_edit && data.is_based_on_directive === BOOL.TRUE) {
     if (!data.directive_method) {
       ctx.addIssue({ code: "custom", path: ["directive_method"], message: "طريقة التوجيه مطلوبة" });
     }

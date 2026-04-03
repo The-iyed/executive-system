@@ -1,23 +1,28 @@
 
 
-## Plan: Remove validation error from ScheduleTab, keep only in modal
+## Plan: Align collapsed actions with metadata tags
 
 ### Problem
-The `validationError` (e.g. "وقت النهاية يجب أن يكون بعد وقت البداية") is displayed inside the الجدولة tab via `ScheduleTab`. This error should only appear inside the scheduling confirmation modal (`ScheduleConfirmDialog`), not on the tab itself.
+The action buttons in the expanded row don't have the same left-side spacing as the metadata tags above them. The chevron and status badge area creates a visual indent on the left that the actions row doesn't match.
 
-### Changes
+### Change to `DirectiveCard.tsx`
 
-#### 1. `src/modules/UC02/features/meeting-detail/tabs/ScheduleTab.tsx`
-- Remove `validationError` from the props interface
-- Remove the error banner rendering block (lines 18–22)
+On line 161, the actions container has `pr-9` for right padding but no left padding. Add `pl-9` to match the left-side spacing of the chevron + badge area, so actions visually align under the metadata tags.
 
-#### 2. `src/modules/UC02/features/meeting-detail/MeetingDetailPage.tsx` (~line 161)
-- Remove `validationError={h.validationError}` prop from the `<ScheduleTab>` usage
+```text
+Before:  <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9">
+After:   <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9 pl-9">
+```
+
+### Layout
+```text
+Row 1: [✓] [title...] ——— [نسخ] [جدولة] [مهم] [عاجل] [28 مارس] [مكتمل ●] [⌄]
+Row 2:      [padding-r]    [طلب إجتماع]                          [padding-l]
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `ScheduleTab.tsx` | Remove `validationError` prop and error banner |
-| `MeetingDetailPage.tsx` | Stop passing `validationError` to `ScheduleTab` |
+| `DirectiveCard.tsx` | Add `pl-9` to actions row container (line 161) |
 
