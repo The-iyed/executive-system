@@ -38,12 +38,10 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 
 function ToggleCard({
   label,
-  description,
   checked,
   onChange,
 }: {
   label: string;
-  description: string;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
@@ -57,7 +55,6 @@ function ToggleCard({
           : 'bg-muted/20 border-border/60 hover:bg-muted/40 hover:border-border'
       }`}
     >
-      {/* Checkbox */}
       <span
         className={`flex items-center justify-center w-5 h-5 rounded-md border-[1.5px] transition-all duration-200 ${
           checked
@@ -74,7 +71,6 @@ function ToggleCard({
       <span className={`text-[13px] font-bold transition-colors ${checked ? 'text-primary' : 'text-foreground'}`}>
         {label}
       </span>
-      <span className="text-[11px] text-muted-foreground leading-tight">{description}</span>
     </button>
   );
 }
@@ -116,13 +112,11 @@ export function ScheduleConfirmDialog({
             <div className="flex items-stretch gap-2.5">
               <ToggleCard
                 label="مبدئي"
-                description="اجتماع بدون محضر رسمي"
                 checked={isPreliminaryBooking}
                 onChange={onPreliminaryBookingChange}
               />
               <ToggleCard
                 label="البيانات مكتملة"
-                description="جميع المعلومات المطلوبة متوفرة"
                 checked={isDataComplete}
                 onChange={onDataCompleteChange}
               />
