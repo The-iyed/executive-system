@@ -3,13 +3,23 @@ import { MeetingType, AttendanceMechanism, MeetingClassification, MeetingLocatio
 import { agendaItemSchema, validateAgendaItems, validateAgendaDuration } from "../shared/schema";
 
 const meetingUserSchema = z.object({
-  id: z.string().optional(),
-  username: z.string().optional(),
-  email: z.string().optional(),
-  displayName: z.string().optional(),
-  givenName: z.string().optional(),
-  mail: z.string().optional(),
-  objectGUID: z.string().optional(),
+  id: z.string().nullable().optional(),
+  username: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  displayName: z.string().nullable().optional(),
+  displayNameAR: z.string().nullable().optional(),
+  displayNameEN: z.string().nullable().optional(),
+  givenName: z.string().nullable().optional(),
+  mail: z.string().nullable().optional(),
+  objectGUID: z.string().nullable().optional(),
+  cn: z.string().nullable().optional(),
+  sn: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  department: z.string().nullable().optional(),
+  company: z.string().nullable().optional(),
+  mobile: z.string().nullable().optional(),
+  manager: z.string().nullable().optional(),
+  is_disabled: z.number().nullable().optional(),
 }).passthrough();
 
 export const schedulerStep1Schema = z.object({
@@ -62,6 +72,12 @@ export const schedulerStep1Schema = z.object({
   }
   if ([AttendanceMechanism.PHYSICAL, AttendanceMechanism.HYBRID].includes(data.meeting_channel) && data.meeting_location === MeetingLocation.OTHER && !data.meeting_location_custom) {
     ctx.addIssue({ code: "custom", path: ["meeting_location_custom"], message: "يرجى تحديد الموقع" });
+  }
+  if (!data.meeting_start_date) {
+    ctx.addIssue({ code: "custom", path: ["meeting_start_date"], message: "موعد الاجتماع مطلوب" });
+  }
+  if (!data.meeting_end_date) {
+    ctx.addIssue({ code: "custom", path: ["meeting_end_date"], message: "موعد نهاية الاجتماع مطلوب" });
   }
   if (data.agenda_items?.length > 0) validateAgendaItems(data.agenda_items, ctx);
   validateAgendaDuration(data.agenda_items ?? [], data.meeting_start_date, data.meeting_end_date, ctx);
