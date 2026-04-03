@@ -10,9 +10,10 @@ interface Props {
   showMethod: boolean;
   showFile: boolean;
   showText: boolean;
+  required?: boolean;
 }
 
-export function DirectiveSection({ showMethod, showFile, showText }: Props) {
+export function DirectiveSection({ showMethod, showFile, showText, required = true }: Props) {
   const { register, control, formState: { errors } } = useFormContext();
   const directiveEditable = useIsFieldEditable("is_based_on_directive");
   const methodEditable = useIsFieldEditable("directive_method");
@@ -37,7 +38,7 @@ export function DirectiveSection({ showMethod, showFile, showText }: Props) {
         </div>
 
         {showMethod && (
-          <FormField label="طريقة التوجيه" name="directive_method" required errors={errors} colSpan={4}>
+          <FormField label="طريقة التوجيه" name="directive_method" required={required} errors={errors} colSpan={4}>
             <Controller name="directive_method" control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange} disabled={!methodEditable}>
@@ -49,10 +50,10 @@ export function DirectiveSection({ showMethod, showFile, showText }: Props) {
           </FormField>
         )}
 
-        {showFile && <MeetingMinutesFileField />}
+        {showFile && <MeetingMinutesFileField required={required} />}
 
         {showText && (
-          <FormField label="التوجيه" name="directive_text" required errors={errors} colSpan={4}>
+          <FormField label="التوجيه" name="directive_text" required={required} errors={errors} colSpan={4}>
             <Input placeholder="أدخل نص التوجيه" disabled={!textEditable} className={inputClass(!!errors.directive_text)} {...register("directive_text")} />
           </FormField>
         )}
@@ -61,7 +62,7 @@ export function DirectiveSection({ showMethod, showFile, showText }: Props) {
   );
 }
 
-function MeetingMinutesFileField() {
+function MeetingMinutesFileField({ required = true }: { required?: boolean }) {
   const { control, formState: { errors } } = useFormContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -75,7 +76,7 @@ function MeetingMinutesFileField() {
   }, []);
 
   return (
-    <FormField label="محضر الاجتماع" name="previous_meeting_minutes_file_content" required errors={errors} colSpan={4}>
+    <FormField label="محضر الاجتماع" name="previous_meeting_minutes_file_content" required={required} errors={errors} colSpan={4}>
       <Controller name="previous_meeting_minutes_file_content" control={control}
         render={({ field }) => {
           const val = field.value;

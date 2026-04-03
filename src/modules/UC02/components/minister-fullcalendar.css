@@ -235,3 +235,17 @@
 .minister-fc .fc-timegrid-axis {
   border-color: #f3f4f6 !important;
 }
+
+/* Monthly "+X more" popover — constrained with scroll */
+.minister-fc .fc-popover {
+  max-width: 320px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e5e7eb;
+}
+
+.minister-fc .fc-popover .fc-popover-body {
+  min-height: 80px;
+  max-height: 320px;
+  overflow-y: auto;
+}

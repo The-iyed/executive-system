@@ -68,7 +68,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           <MeetingDateField
             startName="meeting_start_date"
             endName="meeting_end_date"
-            required={!isSchedulerEdit}
+            required
             minDate={isSchedulerEdit ? undefined : minDate}
             disabled={
               !isSchedulerEdit &&
@@ -104,6 +104,7 @@ export function SubmitterStep1Form({ onSubmit, initialValues, isSchedulerEdit, m
           showMethod={visibility.directive_method}
           showFile={visibility.previous_meeting_minutes_file_content}
           showText={visibility.directive_text}
+          required={!isSchedulerEdit}
         />
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5">
