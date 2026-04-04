@@ -40,6 +40,7 @@ interface AuthProviderProps {
 
 interface JwtPayload {
   exp: number;
+  iat?: number;
 }
 
 export const isValidToken = (token: string): boolean => {
@@ -215,10 +216,30 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
         const nowMs = Date.now();
         const expiresAtMs = expSec * 1000;
-        const ttlMs = expiresAtMs - nowMs;
-        // Half of remaining lifetime (30m token → refresh in ~15m). Min delay avoids tight loops.
-        const delayMs =
-          ttlMs <= 0 ? 0 : Math.max(Math.floor(ttlMs / 2), 5_000);
+
+        // Refresh at midpoint of token lifetime (e.g. 30m access token → refresh 15m after iat).
+        let delayMs: number;
+        if (currentUser.access_token) {
+          try {
+            const { exp, iat } = jwtDecode<JwtPayload>(currentUser.access_token);
+            if (typeof iat === 'number' && typeof exp === 'number' && exp > iat) {
+              const midpointMs = (iat + (exp - iat) / 2) * 1000;
+              delayMs = Math.floor(midpointMs - nowMs);
+            } else {
+              delayMs = NaN;
+            }
+          } catch {
+            delayMs = NaN;
+          }
+        } else {
+          delayMs = NaN;
+        }
+
+        if (Number.isNaN(delayMs)) {
+          const ttlMs = expiresAtMs - nowMs;
+          delayMs =
+            ttlMs <= 0 ? 0 : Math.max(Math.floor(ttlMs / 2), 5_000);
+        }
 
         if (delayMs <= 0) {
           await runProactiveRefresh();
