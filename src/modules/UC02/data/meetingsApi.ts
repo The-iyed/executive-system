@@ -1250,6 +1250,7 @@ export const closeMeetingRequest = async (meetingId: string): Promise<void> => {
 
 // Evaluate Readiness API
 export interface EvaluateReadinessResponse {
+  readiness_percentage: number;
   readiness: string;
   reasoning: string[];
 }
