@@ -1,9 +1,7 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useSaveDraftBasicInfo,
-  useSaveDraftContent,
-  useSaveDraftInvitees,
+  useSaveDraftUnified,
   useSaveSchedulerStep3Invitees,
   useSubmitDraft,
   useResubmitToScheduling,
@@ -14,7 +12,6 @@ import { useModalSteps } from "./useModalSteps";
 import { useMeetingDetail } from "./useMeetingDetail";
 import { MeetingOwnerType } from "@/modules/shared/types";
 import { useToast } from "@/lib/ui";
-import { buildStep1FormData } from "../../shared/utils/buildStep1FormData";
 
 interface UseSubmitterModalOptions {
   open: boolean;
@@ -63,9 +60,7 @@ export function useSubmitterModal({
   });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
-  const basicInfoMutation = useSaveDraftBasicInfo();
-  const contentMutation = useSaveDraftContent();
-  const inviteesMutation = useSaveDraftInvitees();
+  const saveUnifiedMutation = useSaveDraftUnified();
   const schedulerInviteesMutation = useSaveSchedulerStep3Invitees();
   const submitMutation = useSubmitDraft();
   const resubmitSchedulingMutation = useResubmitToScheduling();
@@ -93,19 +88,17 @@ export function useSubmitterModal({
   );
 
   /**
-   * Orchestrate all 3 steps sequentially, then submit.
-   * For new meetings: step1 POST returns draftId needed by steps 2 & 3.
-   * For edits: draftId already exists.
+   * Save basic-info + content + invitees in one request, then submit/resubmit when applicable.
+   * Returns the draft/meeting id after a successful save (and UI close), or null if validation/save failed.
    */
-  const handleFinalSubmit = async () => {
+  const handleFinalSubmit = async (): Promise<string | null> => {
     if (!steps.step1Data) {
       toast({ title: "يرجى إكمال الخطوة الأولى", variant: "destructive" });
-      return;
+      return null;
     }
 
-    const rawRows = steps.inviteesRef.current?.getRows() ?? [];
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
-    if (!inviteesPayload) return;
+    if (!inviteesPayload) return null;
 
     const step1Data = steps.step1Data;
     const step2Data = steps.step2Data;
@@ -114,33 +107,17 @@ export function useSubmitterModal({
     setIsFinalizing(true);
 
     try {
-      // ── Step 1: Save basic info ──────────────────────────────────────
-      const formData = buildStep1FormData(step1Data);
-      const meetingId = await basicInfoMutation.mutateAsync({
-        formData,
+      const { id: meetingId, status: meetingStatus } = await saveUnifiedMutation.mutateAsync({
+        step1Data: step1Data as Record<string, unknown>,
+        step2FormData: step2Data,
+        invitees: inviteesPayload,
         draftId,
+        ...(isSchedulerEdit && { is_content_updated: !!step2Data }),
       });
 
       if (!draftId) {
         steps.setDraftId(meetingId);
       }
-
-      // ── Step 2: Save content ─────────────────────────────────────────
-      if (step2Data) {
-        await contentMutation.mutateAsync({
-          draftId: meetingId,
-          payload: step2Data,
-        });
-      }
-
-      // ── Step 3: Save invitees ────────────────────────────────────────
-      const response = await inviteesMutation.mutateAsync({
-        draftId: meetingId,
-        invitees: inviteesPayload,
-        ...(isSchedulerEdit && { is_content_updated: !!step2Data }),
-      });
-
-      const meetingStatus = response.status;
 
       // ── Submit / resubmit ────────────────────────────────────────────
       if (isSchedulerEdit) {
@@ -148,12 +125,25 @@ export function useSubmitterModal({
         if (isEditMode) syncMeetingDetails(meetingId);
         onSubmitSuccess?.();
         onClose();
-        return;
+        return meetingId;
       }
 
       const submitAction = resolveSubmitAction(meetingStatus);
+      let submitFollowUpError: Error | null = null;
       if (submitAction) {
-        await submitAction(meetingId);
+        try {
+          await submitAction(meetingId);
+        } catch (e) {
+          submitFollowUpError = e instanceof Error ? e : new Error(String(e));
+        }
+      }
+
+      if (submitFollowUpError) {
+        toast({
+          title: submitFollowUpError.message,
+          variant: 'destructive',
+        });
+      } else if (submitAction) {
         toast({ title: "تم إرسال الطلب بنجاح" });
       } else {
         toast({ title: "تم التحديث بنجاح" });
@@ -167,8 +157,10 @@ export function useSubmitterModal({
 
       onSubmitSuccess?.();
       onClose();
+      return meetingId;
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : "فشل إرسال الطلب", variant: 'destructive' });
+      return null;
     } finally {
       setIsFinalizing(false);
     }
@@ -181,38 +173,23 @@ export function useSubmitterModal({
       return;
     }
 
-    const rawRows = steps.inviteesRef.current?.getRows() ?? [];
     const inviteesPayload = steps.inviteesRef.current?.validateAndGetPayload();
     if (!inviteesPayload) return;
 
     setIsFinalizing(true);
 
     try {
-      // Step 1
-      const formData = buildStep1FormData(steps.step1Data);
-      const meetingId = await basicInfoMutation.mutateAsync({
-        formData,
+      const { id: meetingId } = await saveUnifiedMutation.mutateAsync({
+        step1Data: steps.step1Data as Record<string, unknown>,
+        step2FormData: steps.step2Data,
+        invitees: inviteesPayload,
         draftId: steps.activeDraftId,
+        ...(isSchedulerEdit && { is_content_updated: !!steps.step2Data }),
       });
 
       if (!steps.activeDraftId) {
         steps.setDraftId(meetingId);
       }
-
-      // Step 2
-      if (steps.step2Data) {
-        await contentMutation.mutateAsync({
-          draftId: meetingId,
-          payload: steps.step2Data,
-        });
-      }
-
-      // Step 3
-      await inviteesMutation.mutateAsync({
-        draftId: meetingId,
-        invitees: inviteesPayload,
-        ...(isSchedulerEdit && { is_content_updated: !!steps.step2Data }),
-      });
 
       toast({ title: "تم حفظ المسودة بنجاح" });
       onClose();
