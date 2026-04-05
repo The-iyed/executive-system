@@ -374,28 +374,36 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
 
             {/* Actions footer */}
             <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-border/30 bg-muted/5">
-              {display.meetingId && onEdit && (
-                <button
-                  type="button"
-                  onClick={() => onEdit(display.meetingId!)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  تعديل
-                </button>
+              {display.meetingId ? (
+                <>
+                  {onEdit && (
+                    <button
+                      type="button"
+                      onClick={() => onEdit(display.meetingId!)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      تعديل
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigate(`/meeting/${display.meetingId}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/60 text-[12px] font-semibold text-foreground bg-background hover:bg-muted/50 transition-all"
+                  >
+                    عرض التفاصيل
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 text-muted-foreground bg-muted/30 px-3.5 py-2 rounded-lg flex-1">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span className="text-[12px] font-medium">جاري مزامنة البيانات من Outlook، يرجى الانتظار لحظات</span>
+                </div>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  const id = display.meetingId ?? event.id;
-                  onClose();
-                  navigate(`/meeting/${id}`);
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/60 text-[12px] font-semibold text-foreground bg-background hover:bg-muted/50 transition-all"
-              >
-                عرض التفاصيل
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </button>
               {display.isLink && !display.isPhysical && (
                 <a
                   href={display.locationOrLink}
