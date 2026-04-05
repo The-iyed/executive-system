@@ -163,7 +163,7 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
           {/* Status badge */}
           <div className="min-w-[90px] flex justify-center">
             <span className={cn(
-              'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap',
+              'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-semibold w-[90px] justify-center',
               badge.color,
             )}>
               {badge.label}
