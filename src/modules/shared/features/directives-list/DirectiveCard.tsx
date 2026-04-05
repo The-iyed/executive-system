@@ -64,14 +64,15 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
   return (
     <div
       className={cn(
-        'group px-5 py-3.5 transition-colors cursor-pointer select-none',
+        'group px-5 py-3.5 transition-colors select-none',
+        hasExpandableContent && 'cursor-pointer',
         expanded ? 'bg-muted/30' : 'hover:bg-muted/20',
       )}
       onClick={() => hasExpandableContent && setExpanded((v) => !v)}
     >
       {/* Row 1: Split layout — title right, metadata left */}
       <div className="flex items-center justify-between gap-3">
-        {/* Right group: icon + title + copy */}
+        {/* Right group: icon + title */}
         <div className="min-w-0 flex-1 flex items-center gap-2">
           <div className={cn(
             'flex size-7 shrink-0 items-center justify-center rounded-full',
@@ -80,69 +81,97 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
             {isCompleted ? <CheckCircle2 className="size-[18px]" /> : <Clock className="size-[18px]" />}
           </div>
 
-          <h3 className={cn(
-            'min-w-0 text-[13px] font-bold text-foreground leading-normal',
-            expanded ? 'whitespace-normal' : 'truncate',
-          )}>
+          <h3
+            className={cn(
+              'min-w-0 text-[13px] font-bold text-foreground leading-normal',
+              expanded ? 'whitespace-normal' : 'truncate',
+            )}
+            title={directive.title}
+          >
             {directive.title}
           </h3>
         </div>
 
         {/* Left group: tags + date + badge + chevron */}
-        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1 shrink-0 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
-            title="نسخ المحتوى"
-          >
-            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-            نسخ
-          </button>
-          {directive.directive_type && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              <FileText className="size-3" />
-              {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
-            </span>
-          )}
-          {isImportant && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-orange-50/80 border border-orange-200/50 px-2 py-0.5 text-[10px] font-semibold text-orange-500">
-              <Zap className="size-3" />
-              {IMPORTANCE_LABELS[directive.importance!]}
-            </span>
-          )}
-          {isUrgent && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/80 border border-rose-200/50 px-2 py-0.5 text-[10px] font-semibold text-rose-500">
-              <AlertTriangle className="size-3" />
-              {PRIORITY_LABELS[directive.priority!]}
-            </span>
-          )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Copy */}
+          <div className="min-w-[52px] flex justify-center">
+            <button
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1 shrink-0 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted transition-all"
+              title="نسخ المحتوى"
+            >
+              {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+              نسخ
+            </button>
+          </div>
+
+          {/* Type */}
+          <div className="min-w-[68px] flex justify-center">
+            {directive.directive_type ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                <FileText className="size-3" />
+                {DIRECTIVE_TYPE_LABELS[directive.directive_type] || directive.directive_type}
+              </span>
+            ) : <span />}
+          </div>
+
+          {/* Importance */}
+          <div className="min-w-[52px] flex justify-center">
+            {isImportant ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-orange-50/80 border border-orange-200/50 px-2 py-0.5 text-[10px] font-semibold text-orange-500 whitespace-nowrap">
+                <Zap className="size-3" />
+                {IMPORTANCE_LABELS[directive.importance!]}
+              </span>
+            ) : <span />}
+          </div>
+
+          {/* Priority */}
+          <div className="min-w-[60px] flex justify-center">
+            {isUrgent ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/80 border border-rose-200/50 px-2 py-0.5 text-[10px] font-semibold text-rose-500 whitespace-nowrap">
+                <AlertTriangle className="size-3" />
+                {PRIORITY_LABELS[directive.priority!]}
+              </span>
+            ) : <span />}
+          </div>
+
+          {/* Duration */}
           {directive.due_duration_enabled && directive.due_duration_value && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground whitespace-nowrap">
               <Clock className="size-3" />
               {directive.due_duration_value} {DURATION_UNIT_LABELS[directive.due_duration_unit || 'DAY']}
             </span>
           )}
+
+          {/* Voice tag */}
           {hasVoice && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-sky-50/80 border border-sky-200/50 px-2 py-0.5 text-[10px] text-sky-500 font-medium">
+            <span className="inline-flex items-center gap-1 rounded-md bg-sky-50/80 border border-sky-200/50 px-2 py-0.5 text-[10px] text-sky-500 font-medium whitespace-nowrap">
               <Volume2 className="size-3" />
               صوتي
             </span>
           )}
 
-          <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
-            <Calendar className="size-3" />
-            {formatDateArabic(directive.created_at)}
-          </span>
+          {/* Date */}
+          <div className="min-w-[100px] flex justify-center">
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground whitespace-nowrap">
+              <Calendar className="size-3" />
+              {formatDateArabic(directive.created_at)}
+            </span>
+          </div>
 
-          <span className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap shrink-0',
-            badge.color,
-          )}>
-            {badge.label}
-            <span className={cn('size-1.5 rounded-full', badge.dot)} />
-          </span>
+          {/* Status badge */}
+          <div className="min-w-[90px] flex justify-center">
+            <span className={cn(
+              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold whitespace-nowrap',
+              badge.color,
+            )}>
+              {badge.label}
+              <span className={cn('size-1.5 rounded-full', badge.dot)} />
+            </span>
+          </div>
 
-
+          {/* Chevron */}
           {hasExpandableContent && (
             <ChevronDown className={cn(
               'size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200',
@@ -156,15 +185,16 @@ export function DirectiveCard({ directive, statusField = 'scheduling_officer_sta
       {hasExpandableContent && (
         <div className={cn(
           'overflow-hidden transition-all duration-200 ease-in-out',
-          expanded ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0',
+          expanded ? 'max-h-40 opacity-100 mt-3' : 'max-h-0 opacity-0',
         )}>
-          <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9 pl-9">
+          <div className="flex justify-end items-center gap-2 flex-wrap pr-9 pl-9">
             {visibleActions.map((action) => (
               <button
                 key={action.id}
                 onClick={(e) => { e.stopPropagation(); action.onClick(directive); }}
                 className={cn(
-                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all whitespace-nowrap',
+                  'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap',
+                  'hover:scale-[1.03] active:scale-[0.97]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                   action.className,
                 )}
