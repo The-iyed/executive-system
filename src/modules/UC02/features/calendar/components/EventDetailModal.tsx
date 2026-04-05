@@ -1,7 +1,7 @@
 import React, { useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink, Settings, Check, ArrowLeft } from 'lucide-react';
+import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink, Settings, Check, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, cn, Skeleton } from '@/lib/ui';
 import { toast } from '@/lib/ui/components/use-toast';
 import type { CalendarEventData } from '@/modules/shared';
