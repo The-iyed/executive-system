@@ -1,27 +1,21 @@
-
-
-## Plan: Unify status badge style with other tags
+## Plan: Equal-width status badges
 
 ### Problem
-The status badges ("مكتمل", "قيد المتابعة") use `rounded-full px-3 py-1 text-[11px]` — making them taller and rounder than the other metadata tags which use `rounded-md px-2 py-0.5 text-[10px]`. They should match.
+The two status badges "مكتمل" and "قيد المتابعة" have different widths because they rely on text content width. They should be the same fixed width for visual consistency.
 
-### Changes to `DirectiveCard.tsx`
+### Change to `DirectiveCard.tsx`
 
-#### 1. Match status badge sizing to other tags
-Change the status badge span (line 166) from:
-- `rounded-full px-3 py-1 text-[11px]` → `rounded-md px-2 py-0.5 text-[10px]`
+On the status badge `<span>` (line 166), add a fixed width so both badges render identically:
+- Add `w-[90px] justify-center` to the inner `<span>` element, making the text centered within a consistent-width badge
+- Remove `whitespace-nowrap` (no longer needed with fixed width)
 
-This matches the exact sizing of the copy, type, importance, priority, and voice tags.
-
-#### 2. Keep fixed-width container
-The `min-w-[90px]` wrapper stays to ensure alignment across cards. Both "مكتمل" and "قيد المتابعة" will render at the same width.
-
-#### 3. Keep the colored dot indicator
-The small `size-1.5 rounded-full` dot stays — it provides a quick visual signal without adding height.
+```text
+Before: <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] ...">
+After:  <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] w-[90px] justify-center ...">
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DirectiveCard.tsx` | Update status badge classes from `rounded-full px-3 py-1 text-[11px]` to `rounded-md px-2 py-0.5 text-[10px]` |
-
+| `DirectiveCard.tsx` | Add `w-[90px] justify-center` to status badge span for equal width |
