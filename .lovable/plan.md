@@ -1,22 +1,21 @@
 
-## Plan: Equal-width status badges
+
+## Plan: Make header scroll with content, keep only footer fixed
 
 ### Problem
-The two status badges "مكتمل" and "قيد المتابعة" have different widths because they size based on text content. They should be the same fixed width for visual consistency (as shown in the screenshot).
+Currently the header (title, subtitle, step indicator, close button) is `sticky top-0` inside the scroll container, so it stays fixed while the form scrolls beneath it. The user wants everything to scroll together, with only the footer action bar remaining fixed at the bottom.
 
-### Change to `DirectiveCard.tsx`
+### Change to `MeetingModalShell.tsx`
 
-On the status badge `<span>` (line 165), add a fixed width and center alignment so both badges render identically:
+Remove the `sticky` behavior from the header by removing these classes from the header wrapper (line 71):
+- Remove: `sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90`
+- Keep: `border-b border-border/60`
 
-- Replace `whitespace-nowrap` with `w-[90px] justify-center`
-
-```text
-Before: 'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap'
-After:  'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-semibold w-[90px] justify-center'
-```
+This makes the header (close button, title, subtitle, step indicator) scroll naturally with the form content, while the `ModalActionBar` stays fixed at the bottom since it's already outside the `overflow-y-auto` container.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `DirectiveCard.tsx` | Add `w-[90px] justify-center` to status badge span, remove `whitespace-nowrap` |
+| `MeetingModalShell.tsx` | Remove `sticky top-0 z-10` and backdrop classes from header div (line 71) |
+
