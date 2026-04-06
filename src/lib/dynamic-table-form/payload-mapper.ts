@@ -24,7 +24,8 @@ export function mapRowToPayload(
   }
 
   if ('is_presence_required' in payload) {
-    payload.is_presence_required = Boolean(payload.is_presence_required);
+ 
+    payload.is_presence_required = !Boolean(payload.is_presence_required);
   }
 
   return payload;
