@@ -54,18 +54,21 @@ export function SubmitterModal({ open, onOpenChange, editMeetingId, callerRole, 
   const isDraftSchedulerEdit = callerRole === MeetingOwnerType.SCHEDULING && meetingStatus === MeetingStatus.DRAFT;
 
   const submitDraftMutation = useMutation({
-    mutationFn: async () => {
-      // First save, then submit
-      await handleFinalSubmit();
-      if (activeDraftId) {
-        await submitDraft(activeDraftId);
+    mutationFn: async (): Promise<string> => {
+      // Save unified payload (handleFinalSubmit closes the modal for this flow when save succeeds).
+      const meetingId = await handleFinalSubmit();
+      if (!meetingId) {
+        throw new Error('تعذر حفظ الطلب');
       }
+      // Scheduler "إرسال للمراجعة": submit uses the id returned from save — not activeDraftId (stale after POST create).
+      await submitDraft(meetingId);
+      return meetingId;
     },
-    onSuccess: () => {
+    onSuccess: (meetingId) => {
       toast({ title: 'تم إرسال الطلب للمراجعة بنجاح' });
       queryClient.invalidateQueries({ queryKey: ['work-basket', 'uc02'] });
-      queryClient.invalidateQueries({ queryKey: ['meeting', activeDraftId] });
-      queryClient.invalidateQueries({ queryKey: ['meeting-draft', activeDraftId] });
+      queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
+      queryClient.invalidateQueries({ queryKey: ['meeting-draft', meetingId] });
       setIsSubmitDraftConfirmOpen(false);
     },
     onError: (err) => {
