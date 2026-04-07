@@ -148,6 +148,19 @@ const ContentRequestDetailPage: React.FC = () => {
         isPublishing={h.publishDraftMutation.isPending}
       />
 
+      <ConfirmDialog
+        open={h.showSendConfirm}
+        onOpenChange={h.setShowSendConfirm}
+        title="إرسال إلى مسؤول الجدولة"
+        description="هل أنت متأكد من إرسال هذا الطلب إلى مسؤول الجدولة؟"
+        confirmLabel="إرسال"
+        cancelLabel="إلغاء"
+        loadingLabel="جاري الإرسال..."
+        onConfirm={h.confirmSendToScheduling}
+        isLoading={h.sendToSchedulingMutation.isPending}
+        variant="primary"
+      />
+
       <AttachmentPreviewDrawer
         open={!!h.previewAttachment}
         onOpenChange={(open) => { if (!open) h.setPreviewAttachment(null); }}
