@@ -76,6 +76,6 @@ import { Channel, MEETING_CHANNEL_OPTIONS } from "../../types";
       key: "is_presence_required",
       label: "الحضور اختياري",
       type: "checkbox",
-      defaultValue: true,
+      defaultValue: false,
     },
   ];
