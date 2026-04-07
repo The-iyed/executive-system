@@ -68,7 +68,7 @@ export function MeetingModalShell({
         dir="rtl"
       >
         <div className="flex-1 overflow-y-auto">
-          <div className="sticky top-0 z-10 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
+          <div className="border-b border-border/60">
             <div className="flex items-center justify-between px-6 pt-5 pb-3">
               <Button
                 type="button"

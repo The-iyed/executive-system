@@ -1,14 +1,16 @@
 
 
-## Plan: Rename "الحضور إجباري" column to "الحضور اختياري"
+## Plan: Change default values for two checkbox columns
 
-### Change
+### Change to `src/modules/shared/features/invitees-table-form/columns.ts`
 
-In `src/modules/shared/features/invitees-table-form/columns.ts`, update the `is_presence_required` column label from `"الحضور إجباري"` to `"الحضور اختياري"`.
+Update the `defaultValue` for two columns:
+- `access_permission` ("صلاحية الاطلاع"): `false` → `true`
+- `is_presence_required` ("الحضور اختياري"): `false` → `true`
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `columns.ts` | `label: "الحضور إجباري"` → `label: "الحضور اختياري"` |
+| `columns.ts` | Set `defaultValue: true` for `access_permission` and `is_presence_required` columns |
 
