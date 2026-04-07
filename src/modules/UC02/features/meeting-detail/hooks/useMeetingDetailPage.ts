@@ -263,8 +263,8 @@ export function useMeetingDetailPage() {
       const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
       return [...filtered, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
     }
-    if (meetingStatus === MeetingStatus.CLOSED) {
-      return [...all, { id: 'directives', label: 'التوجيهات' }];
+    if (meetingStatus === MeetingStatus.CLOSED || meetingStatus === MeetingStatus.CLOSED_PASS) {
+      return [...all, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
     }
     return all;
   }, [meetingStatus, isScheduleOfficer]);
