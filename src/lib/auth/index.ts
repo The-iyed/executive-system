@@ -5,6 +5,7 @@ export {
   initiateLogin,
   handleCallback,
   handleSilentRenew,
+  refreshAccessToken,
   getAccessToken,
   logout,
   getStoredCodeVerifier,
