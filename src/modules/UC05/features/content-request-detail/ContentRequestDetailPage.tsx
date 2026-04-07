@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { Send, RotateCcw, MessageSquare, Loader2, AlertCircle } from 'lucide-react';
+import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog/ConfirmDialog';
 import { MeetingStatus, StatusBadge, DetailPageHeader, MeetingActionsBar, AttachmentPreviewDrawer } from '@/modules/shared';
 import { useContentRequestDetailPage } from './hooks/useContentRequestDetailPage';
 import { RequestInfoTab } from './tabs/RequestInfoTab';
