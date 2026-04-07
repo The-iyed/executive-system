@@ -1,5 +1,17 @@
 import { useMutation } from "@tanstack/react-query";
-import { saveDraftBasicInfo, saveDraftContent, saveDraftInvitees, submitDraft, resubmitToScheduling, resubmitToContent, createSchedulerStep1, saveSchedulerStep2Content, saveSchedulerStep3Invitees } from "../api";
+import {
+  saveDraftBasicInfo,
+  saveDraftContent,
+  saveDraftInvitees,
+  saveDraftUnified,
+  type SaveDraftUnifiedParams,
+  submitDraft,
+  resubmitToScheduling,
+  resubmitToContent,
+  createSchedulerStep1,
+  saveSchedulerStep2Content,
+  saveSchedulerStep3Invitees,
+} from "../api";
 
 // ── Step 1: Basic Info ──────────────────────────────────────────────────────
 
@@ -64,6 +76,14 @@ export function useSaveDraftInvitees() {
   return useMutation({
     mutationFn: ({ draftId, invitees, is_content_updated }: SaveInviteesParams) =>
       saveDraftInvitees(draftId, invitees, is_content_updated),
+  });
+}
+
+// ── Submitter: unified draft (basic-info + content + invitees) ──────────────
+
+export function useSaveDraftUnified() {
+  return useMutation({
+    mutationFn: (params: SaveDraftUnifiedParams) => saveDraftUnified(params),
   });
 }
 
