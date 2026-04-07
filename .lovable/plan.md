@@ -1,17 +1,48 @@
 
 
-## Plan: Set "الحضور اختياري" default to `false`
+## Plan: Show "توثيق الاجتماع" tab for SCHEDULED, CLOSED, and CLOSED_PASS statuses
 
-### Change to `src/modules/shared/features/invitees-table-form/columns.ts`
+### Problem
+Currently the "توثيق الاجتماع" tab only appears when status is `SCHEDULED`. For `CLOSED`, a different "التوجيهات" tab appears instead. The tab should be visible for all three statuses: مجدول (`SCHEDULED`), مغلق (`CLOSED`), and مغلق - تمرير (`CLOSED_PASS`).
 
-Set `defaultValue: false` for the `is_presence_required` column (الحضور اختياري).
+### Changes to `useMeetingDetailPage.ts` (lines 262–269)
 
-Also fix the build error in `useContentRequestDetailPage.ts` — move `hasDirectives` declaration above its first usage.
+Update the tab logic:
+
+```typescript
+// Before:
+if (meetingStatus === MeetingStatus.SCHEDULED) {
+  const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
+  return [...filtered, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
+}
+if (meetingStatus === MeetingStatus.CLOSED) {
+  return [...all, { id: 'directives', label: 'التوجيهات' }];
+}
+
+// After:
+if (meetingStatus === MeetingStatus.SCHEDULED) {
+  const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
+  return [...filtered, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
+}
+if (meetingStatus === MeetingStatus.CLOSED || meetingStatus === MeetingStatus.CLOSED_PASS) {
+  return [...all, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
+}
+```
+
+Also update the auto-switch guard (line 275–276) to allow the tab for all three statuses:
+
+```typescript
+// Before:
+else if (meetingStatus !== MeetingStatus.SCHEDULED && activeTab === 'meeting-documentation') setActiveTab('request-info');
+else if (meetingStatus !== MeetingStatus.CLOSED && activeTab === 'directives') setActiveTab('request-info');
+
+// After:
+else if (![MeetingStatus.SCHEDULED, MeetingStatus.CLOSED, MeetingStatus.CLOSED_PASS].includes(meetingStatus) && activeTab === 'meeting-documentation') setActiveTab('request-info');
+```
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `columns.ts` | `is_presence_required` → `defaultValue: false` |
-| `useContentRequestDetailPage.ts` | Move `hasDirectives` declaration before its first reference to fix TS2448 |
+| `useMeetingDetailPage.ts` | Show `meeting-documentation` tab for SCHEDULED, CLOSED, and CLOSED_PASS; remove old `directives` tab logic for CLOSED; update auto-switch guard |
 
