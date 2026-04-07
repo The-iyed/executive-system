@@ -58,7 +58,7 @@ import { Channel, MEETING_CHANNEL_OPTIONS } from "../../types";
       key: "access_permission",
       label: "صلاحية الاطلاع",
       type: "checkbox",
-      defaultValue: false,
+      defaultValue: true,
     },
     {
       key: "is_consultant",

@@ -1,14 +1,17 @@
 
 
-## Plan: Rename "الحضور إجباري" column to "الحضور اختياري"
+## Plan: Set "الحضور اختياري" default to `false`
 
-### Change
+### Change to `src/modules/shared/features/invitees-table-form/columns.ts`
 
-In `src/modules/shared/features/invitees-table-form/columns.ts`, update the `is_presence_required` column label from `"الحضور إجباري"` to `"الحضور اختياري"`.
+Set `defaultValue: false` for the `is_presence_required` column (الحضور اختياري).
+
+Also fix the build error in `useContentRequestDetailPage.ts` — move `hasDirectives` declaration above its first usage.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `columns.ts` | `label: "الحضور إجباري"` → `label: "الحضور اختياري"` |
+| `columns.ts` | `is_presence_required` → `defaultValue: false` |
+| `useContentRequestDetailPage.ts` | Move `hasDirectives` declaration before its first reference to fix TS2448 |
 
