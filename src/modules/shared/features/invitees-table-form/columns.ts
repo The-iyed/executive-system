@@ -58,7 +58,7 @@ import { Channel, MEETING_CHANNEL_OPTIONS } from "../../types";
       key: "access_permission",
       label: "صلاحية الاطلاع",
       type: "checkbox",
-      defaultValue: false,
+      defaultValue: true,
     },
     {
       key: "is_consultant",
@@ -76,6 +76,6 @@ import { Channel, MEETING_CHANNEL_OPTIONS } from "../../types";
       key: "is_presence_required",
       label: "الحضور اختياري",
       type: "checkbox",
-      defaultValue: false,
+      defaultValue: true,
     },
   ];
