@@ -4,6 +4,20 @@
 
 set -e
 
+echo "> Ensuring commit author is your GitHub identity..."
+
+GITHUB_NAME="Aymen Mosrati"
+GITHUB_EMAIL="aymenmosrati6@gmail.com"
+
+CURRENT_AUTHOR=$(git log -1 --pretty=format:'%an <%ae>')
+
+EXPECTED_AUTHOR="$GITHUB_NAME <$GITHUB_EMAIL>"
+
+if [ "$CURRENT_AUTHOR" != "$EXPECTED_AUTHOR" ]; then
+  echo "> Rewriting last commit author..."
+  git commit --amend --no-edit --author="$EXPECTED_AUTHOR"
+fi
+
 echo "> Verifying Docker Compose build and startup..."
 docker compose up -d --build
 UP_EXIT=$?
