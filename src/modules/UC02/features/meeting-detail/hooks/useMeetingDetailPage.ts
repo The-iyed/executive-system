@@ -272,8 +272,7 @@ export function useMeetingDetailPage() {
   // Auto-switch tabs when status changes
   useEffect(() => {
     if (meetingStatus === MeetingStatus.SCHEDULED && TABS_HIDDEN_WHEN_SCHEDULED.includes(activeTab)) setActiveTab('request-info');
-    else if (meetingStatus !== MeetingStatus.SCHEDULED && activeTab === 'meeting-documentation') setActiveTab('request-info');
-    else if (meetingStatus !== MeetingStatus.CLOSED && activeTab === 'directives') setActiveTab('request-info');
+    else if (![MeetingStatus.SCHEDULED, MeetingStatus.CLOSED, MeetingStatus.CLOSED_PASS].includes(meetingStatus) && activeTab === 'meeting-documentation') setActiveTab('request-info');
     else if (isScheduleOfficer && activeTab === 'attendees') setActiveTab('schedule');
     else if (!isScheduleOfficer && activeTab === 'schedule') setActiveTab('request-info');
   }, [meetingStatus, activeTab, isScheduleOfficer]);
