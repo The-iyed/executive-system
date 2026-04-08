@@ -263,8 +263,8 @@ export function useMeetingDetailPage() {
       const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
       return [...filtered, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
     }
-    if (meetingStatus === MeetingStatus.CLOSED) {
-      return [...all, { id: 'directives', label: 'التوجيهات' }];
+    if (meetingStatus === MeetingStatus.CLOSED || meetingStatus === MeetingStatus.CLOSED_PASS) {
+      return [...all, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
     }
     return all;
   }, [meetingStatus, isScheduleOfficer]);
@@ -272,8 +272,7 @@ export function useMeetingDetailPage() {
   // Auto-switch tabs when status changes
   useEffect(() => {
     if (meetingStatus === MeetingStatus.SCHEDULED && TABS_HIDDEN_WHEN_SCHEDULED.includes(activeTab)) setActiveTab('request-info');
-    else if (meetingStatus !== MeetingStatus.SCHEDULED && activeTab === 'meeting-documentation') setActiveTab('request-info');
-    else if (meetingStatus !== MeetingStatus.CLOSED && activeTab === 'directives') setActiveTab('request-info');
+    else if (![MeetingStatus.SCHEDULED, MeetingStatus.CLOSED, MeetingStatus.CLOSED_PASS].includes(meetingStatus) && activeTab === 'meeting-documentation') setActiveTab('request-info');
     else if (isScheduleOfficer && activeTab === 'attendees') setActiveTab('schedule');
     else if (!isScheduleOfficer && activeTab === 'schedule') setActiveTab('request-info');
   }, [meetingStatus, activeTab, isScheduleOfficer]);

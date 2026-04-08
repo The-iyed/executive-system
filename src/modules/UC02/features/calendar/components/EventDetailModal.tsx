@@ -1,7 +1,7 @@
 import React, { useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink, Settings, Check, ArrowLeft, RefreshCw } from 'lucide-react';
+import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink, Settings, Check, ArrowLeft, RefreshCw, Building2, Cloud, Users, Globe } from 'lucide-react';
 import { Dialog, DialogContent, cn, Skeleton } from '@/lib/ui';
 import { toast } from '@/lib/ui/components/use-toast';
 import type { CalendarEventData } from '@/modules/shared';
@@ -184,16 +184,21 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                 </div>
                 <div className="flex flex-col min-w-0 gap-1">
                   <h3 className="text-foreground font-bold text-[16px] leading-6 break-words">{display.title}</h3>
-                  {display.is_internal !== undefined && (
-                    <span className={cn(
-                      'text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit',
-                      display.is_internal
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-amber-500/10 text-amber-600',
-                    )}>
-                      {display.is_internal ? 'داخلي' : 'خارجي'}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {display.is_internal !== undefined && (
+                      <span className={cn(
+                        'text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
+                        display.is_internal ? 'bg-primary/10 text-primary' : 'bg-amber-500/10 text-amber-600',
+                      )}>
+                        {display.is_internal ? <Users className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                        {display.is_internal ? 'اجتماع داخلي' : 'اجتماع خارجي'}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      {display.meetingId ? <Building2 className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
+                      {display.meetingId ? 'تم الإنشاء من النظام' : 'تمت المزامنة من Outlook'}
                     </span>
-                  )}
+                  </div>
                 </div>
               </div>
               <button
