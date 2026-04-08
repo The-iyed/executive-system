@@ -16,6 +16,7 @@ import { PATH as UC06_PATH } from '../../UC06/routes/paths';
 import { PATH as UC09_PATH } from '../../UC09/routes/paths';
 import { PATH as uc13_PATH } from '../../UC-13/routes/paths';
 import { PATH as UC19_PATH } from '../../UC19/routes/paths';
+import { PATH as ADMIN_PATH } from '../../admin/routes/paths';
 
 export interface UseCaseConfig {
   code: string;
@@ -187,6 +188,18 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
         icon: 'solar:document-text-outline',
         label: 'التوجيهات',
         path: UC19_PATH.DIRECTIVES,
+      },
+    ],
+  },
+  'ADMIN': {
+    code: 'ADMIN',
+    defaultRoute: ADMIN_PATH.NOTIFICATIONS,
+    navigationItems: [
+      {
+        id: 'notifications',
+        icon: 'solar:bell-outline',
+        label: 'الإشعارات',
+        path: ADMIN_PATH.NOTIFICATIONS,
       },
     ],
   },
