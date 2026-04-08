@@ -1,36 +1,16 @@
 
 
-## Plan: Improve internal/external badge with source context and descriptive labels
+## Plan: Simplify to single badge with source context in description
 
-### Change to `EventDetailModal.tsx`
+### Change
 
-Replace the current single-word badge ("داخلي" / "خارجي") with **two badges** side by side:
+Replace the two separate badges (source + scope) with a **single badge** based on `is_internal`, plus a small text note indicating the meeting source (Outlook or النظام).
 
-1. **Source badge** — based on `display.meetingId`:
-   - Has `meetingId` → `Building2` icon + **"النظام"** (teal: `bg-primary/10 text-primary`)
-   - No `meetingId` → `Cloud` icon + **"Outlook"** (blue: `bg-blue-500/10 text-blue-600`)
-
-2. **Scope badge** — based on `display.is_internal`:
-   - Internal → `Users` icon + **"اجتماع داخلي"** (teal: `bg-primary/10 text-primary`)
-   - External → `Globe` icon + **"اجتماع خارجي"** (amber: `bg-amber-500/10 text-amber-600`)
-
-Both badges use `text-[10px]`, `rounded-full`, `px-2 py-0.5`, `flex items-center gap-1` for consistency.
-
-### Implementation
-
-**Lines 187–196** — replace the single badge block with:
+**Lines 187–204** in `EventDetailModal.tsx` — replace with:
 
 ```tsx
 <div className="flex items-center gap-1.5 flex-wrap">
-  {/* Source */}
-  <span className={cn(
-    'text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
-    display.meetingId ? 'bg-primary/10 text-primary' : 'bg-blue-500/10 text-blue-600',
-  )}>
-    {display.meetingId ? <Building2 className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
-    {display.meetingId ? 'النظام' : 'Outlook'}
-  </span>
-  {/* Scope */}
+  {/* Scope badge — the only badge */}
   {display.is_internal !== undefined && (
     <span className={cn(
       'text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
@@ -40,14 +20,21 @@ Both badges use `text-[10px]`, `rounded-full`, `px-2 py-0.5`, `flex items-center
       {display.is_internal ? 'اجتماع داخلي' : 'اجتماع خارجي'}
     </span>
   )}
+  {/* Source note */}
+  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+    {display.meetingId ? <Building2 className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
+    {display.meetingId ? 'تم الإنشاء من النظام' : 'تمت المزامنة من Outlook'}
+  </span>
 </div>
 ```
 
-Add `Building2`, `Cloud`, `Users`, `Globe` to the lucide-react imports. Ensure `display.meetingId` is already available (it is — from `event.meetingId`).
+This keeps one prominent badge for internal/external scope, and adds a subtle muted text with icon to indicate the source — no second badge, just a quiet descriptor.
+
+Remove unused imports if any (`Building2`, `Cloud` stay; `Users`, `Globe` stay).
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Add 4 icon imports; replace single badge with two badges (source + scope) |
+| `EventDetailModal.tsx` | Replace dual badges with single scope badge + muted source text |
 
