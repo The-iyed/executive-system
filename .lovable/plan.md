@@ -1,48 +1,40 @@
 
 
-## Plan: Show "توثيق الاجتماع" tab for SCHEDULED, CLOSED, and CLOSED_PASS statuses
+## Plan: Simplify to single badge with source context in description
 
-### Problem
-Currently the "توثيق الاجتماع" tab only appears when status is `SCHEDULED`. For `CLOSED`, a different "التوجيهات" tab appears instead. The tab should be visible for all three statuses: مجدول (`SCHEDULED`), مغلق (`CLOSED`), and مغلق - تمرير (`CLOSED_PASS`).
+### Change
 
-### Changes to `useMeetingDetailPage.ts` (lines 262–269)
+Replace the two separate badges (source + scope) with a **single badge** based on `is_internal`, plus a small text note indicating the meeting source (Outlook or النظام).
 
-Update the tab logic:
+**Lines 187–204** in `EventDetailModal.tsx` — replace with:
 
-```typescript
-// Before:
-if (meetingStatus === MeetingStatus.SCHEDULED) {
-  const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
-  return [...filtered, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
-}
-if (meetingStatus === MeetingStatus.CLOSED) {
-  return [...all, { id: 'directives', label: 'التوجيهات' }];
-}
-
-// After:
-if (meetingStatus === MeetingStatus.SCHEDULED) {
-  const filtered = all.filter((t) => !TABS_HIDDEN_WHEN_SCHEDULED.includes(t.id));
-  return [...filtered, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
-}
-if (meetingStatus === MeetingStatus.CLOSED || meetingStatus === MeetingStatus.CLOSED_PASS) {
-  return [...all, { id: 'meeting-documentation', label: 'توثيق الاجتماع' }];
-}
+```tsx
+<div className="flex items-center gap-1.5 flex-wrap">
+  {/* Scope badge — the only badge */}
+  {display.is_internal !== undefined && (
+    <span className={cn(
+      'text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
+      display.is_internal ? 'bg-primary/10 text-primary' : 'bg-amber-500/10 text-amber-600',
+    )}>
+      {display.is_internal ? <Users className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+      {display.is_internal ? 'اجتماع داخلي' : 'اجتماع خارجي'}
+    </span>
+  )}
+  {/* Source note */}
+  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+    {display.meetingId ? <Building2 className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
+    {display.meetingId ? 'تم الإنشاء من النظام' : 'تمت المزامنة من Outlook'}
+  </span>
+</div>
 ```
 
-Also update the auto-switch guard (line 275–276) to allow the tab for all three statuses:
+This keeps one prominent badge for internal/external scope, and adds a subtle muted text with icon to indicate the source — no second badge, just a quiet descriptor.
 
-```typescript
-// Before:
-else if (meetingStatus !== MeetingStatus.SCHEDULED && activeTab === 'meeting-documentation') setActiveTab('request-info');
-else if (meetingStatus !== MeetingStatus.CLOSED && activeTab === 'directives') setActiveTab('request-info');
-
-// After:
-else if (![MeetingStatus.SCHEDULED, MeetingStatus.CLOSED, MeetingStatus.CLOSED_PASS].includes(meetingStatus) && activeTab === 'meeting-documentation') setActiveTab('request-info');
-```
+Remove unused imports if any (`Building2`, `Cloud` stay; `Users`, `Globe` stay).
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `useMeetingDetailPage.ts` | Show `meeting-documentation` tab for SCHEDULED, CLOSED, and CLOSED_PASS; remove old `directives` tab logic for CLOSED; update auto-switch guard |
+| `EventDetailModal.tsx` | Replace dual badges with single scope badge + muted source text |
 
