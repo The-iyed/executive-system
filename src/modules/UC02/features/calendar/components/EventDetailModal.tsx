@@ -184,14 +184,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                 </div>
                 <div className="flex flex-col min-w-0 gap-1">
                   <h3 className="text-foreground font-bold text-[16px] leading-6 break-words">{display.title}</h3>
-<div className="flex items-center gap-1.5 flex-wrap">
-                    <span className={cn(
-                      'text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
-                      display.meetingId ? 'bg-primary/10 text-primary' : 'bg-blue-500/10 text-blue-600',
-                    )}>
-                      {display.meetingId ? <Building2 className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
-                      {display.meetingId ? 'النظام' : 'Outlook'}
-                    </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {display.is_internal !== undefined && (
                       <span className={cn(
                         'text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
@@ -201,6 +194,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                         {display.is_internal ? 'اجتماع داخلي' : 'اجتماع خارجي'}
                       </span>
                     )}
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      {display.meetingId ? <Building2 className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
+                      {display.meetingId ? 'تم الإنشاء من النظام' : 'تمت المزامنة من Outlook'}
+                    </span>
                   </div>
                 </div>
               </div>
