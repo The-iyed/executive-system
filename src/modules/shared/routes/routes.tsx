@@ -9,7 +9,8 @@ import uc06Routes from '../../UC06/routes/routes';
 import uc09Routes from '../../UC09/routes/routes';
 import uc13Routes from '../../UC-13/routes/routes';
 import uc19Routes from '../../UC19/routes/routes';
+import adminRoutes from '../../admin/routes/routes';
 
-const routes = [...sharedRoutes, ...authRoutes, ...uc01Routes, ...uc02Routes, ...uc03Routes, ...uc04Routes, ...uc05Routes, ...uc06Routes, ...uc09Routes, ...uc13Routes, ...uc19Routes]
+const routes = [...sharedRoutes, ...authRoutes, ...uc01Routes, ...uc02Routes, ...uc03Routes, ...uc04Routes, ...uc05Routes, ...uc06Routes, ...uc09Routes, ...uc13Routes, ...uc19Routes, ...adminRoutes]
 
 export default routes

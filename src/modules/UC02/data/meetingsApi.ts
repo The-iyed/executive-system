@@ -326,10 +326,10 @@ export const getMeetingById = async (meetingId: string): Promise<MeetingApiRespo
   const data = response.data;
   if (Array.isArray(data.invitees)) {
     data.invitees = data.invitees.map((inv: any) => {
-      const { is_required, ...rest } = inv;
+      const { ...rest } = inv;
       return {
         ...rest,
-        is_presence_required: inv.is_presence_required ?? is_required ?? false,
+        is_presence_required: Boolean(inv.is_presence_required),
       };
     });
   }
