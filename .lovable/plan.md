@@ -1,89 +1,56 @@
 
 
-## Plan: Build Sent Notifications Management Feature
+## Plan: Modern Admin Notifications UI Redesign
 
-### Overview
-Build a production-ready admin notifications list page with status filtering, pagination, a detail modal for each notification, and a retry action for failed notifications. Uses the existing shared patterns (axios instance, `useMeetingList` hook pattern, status badges, pagination).
+### Design Direction
 
-### Architecture
+Elevate the notifications page from a basic list to a polished admin dashboard view, aligning with the app's existing design language (teal gradients, rounded-2xl cards, branded micro-interactions).
 
-```text
-src/modules/admin/
-├── features/
-│   └── Notifications/
-│       ├── index.tsx              ← Main page component
-│       ├── api.ts                 ← API layer (list, detail, retry)
-│       ├── types.ts               ← Notification types
-│       ├── hooks/
-│       │   └── useNotifications.ts  ← List hook + retry mutation
-│       └── components/
-│           ├── NotificationCard.tsx       ← Card for each notification
-│           ├── NotificationDetailModal.tsx ← Detail modal
-│           └── NotificationFilters.tsx    ← Status filter tabs/chips
-├── routes/
-│   ├── paths.ts                   ← Add detail path
-│   └── routes.tsx                 ← Existing (no change needed)
-```
+### Changes
 
-### File-by-file changes
+**1. Page Layout (`index.tsx`) — Unified card container**
+- Wrap filters + list + pagination inside a single `rounded-2xl border-2 border-border/40 bg-card shadow-sm` container (matching the shared list container pattern from Directives/Meetings)
+- Header stays outside the container with a teal gradient icon background instead of flat `bg-primary/10`
+- Add a summary stats row between header and container: 3 mini stat cards showing counts for Sent / Pending / Failed with colored dot indicators
+- Improve empty state with a more expressive illustration-style layout
 
-**1. `src/modules/admin/features/Notifications/types.ts`**
-- Define `NotificationStatus` enum: `PENDING`, `SENT`, `FAILED`
-- Define `SentNotification` interface (id, title, body, status, recipient info, created_at, sent_at, error_message, etc.)
-- Define `NotificationDetail` interface (extends with full payload details)
-- Define `PaginatedNotificationsResponse` using the shared `PaginatedResponse<SentNotification>` shape
+**2. Filters (`NotificationFilters.tsx`) — Inside container header**
+- Move filters inside the container as a top bar with `border-b border-border/30 bg-muted/20 px-5 py-3`
+- Add count badges next to each filter label (e.g., "مرسل (12)")
+- Active filter uses teal gradient background (`from-[#048F86] to-[#0BB5AA]`) instead of flat `bg-primary`
+- Inactive filters get subtle hover with `hover:bg-muted/60` transition
 
-**2. `src/modules/admin/features/Notifications/api.ts`**
-- Import `axiosInstance` from `@/modules/auth/utils/axios`
-- `fetchNotifications(params)` → GET `/api/v1/admin/sent-notifications` with skip, limit, status
-- `fetchNotificationDetail(id)` → GET `/api/v1/admin/sent-notifications/{id}`
-- `retryNotification(id)` → POST `/api/v1/admin/sent-notifications/{id}/retry`
+**3. Notification Card (`NotificationCard.tsx`) — Row-style redesign**
+- Replace bordered card with a clean row layout inside the container (no individual borders, use `border-b border-border/20` dividers between items)
+- Left side: colored status dot (green/yellow/red) as a vertical accent
+- Layout: subject line + type badge on first row, recipient + timestamp on second row, status badge on the far left (RTL far side)
+- Add hover state: `bg-muted/30` background transition with `hover:translate-x-1` for subtle RTL slide effect
+- Use `transition-all duration-200` for smooth micro-interactions
 
-**3. `src/modules/admin/features/Notifications/hooks/useNotifications.ts`**
-- Reuse `useMeetingList` hook pattern for list state (search, pagination, filters)
-- `useNotificationDetail(id)` — React Query hook for detail fetch
-- `useRetryNotification()` — `useMutation` for retry with toast feedback and query invalidation
+**4. Detail Modal (`NotificationDetailModal.tsx`) — Polish**
+- Add a colored top accent bar based on status (teal for SENT, amber for PENDING, red for FAILED)
+- Retry button uses teal gradient (`from-[#048F86] via-[#069E95] to-[#0BB5AA]`) with `hover:scale-[1.03] active:scale-[0.97]` micro-interaction
+- Template data section uses a cleaner key-value grid with alternating subtle backgrounds
+- Better visual hierarchy with section dividers
 
-**4. `src/modules/admin/features/Notifications/components/NotificationCard.tsx`**
-- RTL card matching MeetingCard style (rounded-2xl, border, hover shadow)
-- Show: title, recipient, timestamp, status badge (using shared `StatusBadge` with PENDING=yellow, SENT=green, FAILED=red)
-- Click opens detail modal
-
-**5. `src/modules/admin/features/Notifications/components/NotificationFilters.tsx`**
-- Horizontal chip/tab row: الكل | قيد الإرسال (PENDING) | مرسل (SENT) | فشل (FAILED)
-- Active chip highlighted with primary color
-
-**6. `src/modules/admin/features/Notifications/components/NotificationDetailModal.tsx`**
-- Dialog/Sheet showing full notification details
-- Sections: recipient info, message content, timestamps, status, error message (if FAILED)
-- Retry button (primary, with loading state) visible only for FAILED status
-- Uses shared Dialog/Sheet primitives
-
-**7. `src/modules/admin/features/Notifications/index.tsx`**
-- Page wrapper with header "الإشعارات المرسلة" and Bell icon
-- Status filter chips at top
-- Cards grid with pagination (reuse shared `Pagination` component)
-- Loading skeletons, empty state, error state
-- Detail modal triggered on card click
+**5. Loading Skeletons**
+- Match new row layout instead of card layout
+- Add shimmer animation effect
 
 ### Technical details
 
-- API calls use the existing `axiosInstance` (auth token, base URL, interceptors already configured)
-- React Query keys: `['admin', 'sent-notifications', ...]` with status/page/search as dependencies
-- Retry mutation invalidates the notification list and detail queries on success
-- Toast notifications (sonner) for retry success/failure
-- All text in Arabic, RTL layout
-- Status badge colors mapped to shared `StatusBadge` config (add PENDING/SENT/FAILED if not present — they already exist in status-badge.tsx)
+- All text remains Arabic RTL
+- Uses existing `cn()` utility, `StatusBadge`, shared `Pagination`
+- No new dependencies needed
+- Font: IBM Plex Sans Arabic (existing)
+- Colors: teal gradient `from-[#048F86] to-[#0BB5AA]` for interactive elements (matching app standard)
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `features/Notifications/types.ts` | New — notification types |
-| `features/Notifications/api.ts` | New — API functions |
-| `features/Notifications/hooks/useNotifications.ts` | New — list/detail/retry hooks |
-| `features/Notifications/components/NotificationCard.tsx` | New — card component |
-| `features/Notifications/components/NotificationFilters.tsx` | New — status filter chips |
-| `features/Notifications/components/NotificationDetailModal.tsx` | New — detail modal with retry |
-| `features/Notifications/index.tsx` | Rewrite — full page with list, filters, pagination, modal |
+| `Notifications/index.tsx` | Unified container layout, stats row, improved empty state |
+| `Notifications/components/NotificationFilters.tsx` | Gradient active state, count badges, container-integrated style |
+| `Notifications/components/NotificationCard.tsx` | Row-style layout with status dot, dividers, hover micro-interactions |
+| `Notifications/components/NotificationDetailModal.tsx` | Status accent bar, gradient retry button, polished sections |
 
