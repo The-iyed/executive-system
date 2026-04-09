@@ -1,27 +1,26 @@
 
 
-## Plan: Gate admin routes by ADMIN role instead of use_cases
+## Plan: Fix admin user default route
 
 ### Problem
-Admin routes (e.g. `/notifications`) are currently accessible to all authenticated users because they have no `useCase` filter. The user wants them restricted to users with `roles: [{ code: "ADMIN" }]`.
+When an admin logs in with `use_cases: []` and `roles: [{ code: "ADMIN" }]`, the `getDefaultRouteForUser` function falls into the `if (!useCases || useCases.length === 0)` branch and returns `/meetings` (UC-01 default). The admin has no use_cases, so they should be routed to `/notifications` instead.
 
-### Approach
-Add a `requiresRoleCodes` property to the route config type and update the filter logic. Admin routes will specify `requiresRoleCodes: ['ADMIN']`, and `filterRoutesByUseCase` will exclude routes when the user lacks the required role.
+### Change to `src/modules/shared/utils/useCaseConfig.ts`
 
-### Changes
+In `getDefaultRouteForUser`, add an ADMIN role check **before** the empty use_cases fallback:
 
-**1. `src/modules/shared/utils/routeFilter.ts`**
-- Add `requiresRoleCodes?: string[]` to the `RouteConfig` type
-- After the existing `excludeRoleCodes` filter, add a check: if `route.requiresRoleCodes` is set, the user must have at least one matching role code — otherwise the route is excluded
+```typescript
+// After minister check (line 230), before the empty useCases check (line 232):
+if (roles?.some((r) => r.code === 'ADMIN')) {
+  return '/notifications';
+}
+```
 
-**2. `src/modules/admin/routes/routes.tsx`**
-- Add `requiresRoleCodes: ['ADMIN']` to each admin route config (currently the notifications route)
-- Add `requiresRoleCodes` to the local `RouteConfig` type
+This ensures admin users with empty `use_cases` are routed to their admin dashboard (`/notifications`) instead of `/meetings`.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `src/modules/shared/utils/routeFilter.ts` | Add `requiresRoleCodes` to type + filtering logic |
-| `src/modules/admin/routes/routes.tsx` | Add `requiresRoleCodes: ['ADMIN']` to notifications route |
+| `src/modules/shared/utils/useCaseConfig.ts` | Add ADMIN role check in `getDefaultRouteForUser` before the empty use_cases fallback, redirecting to `/notifications` |
 
