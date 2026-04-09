@@ -8,6 +8,8 @@ import { AuthProvider } from '@/modules/auth';
 import { App } from './app';
 import './styles.css';
 import * as Sentry from "@sentry/react";
+import posthog from 'posthog-js';
+import { PostHogProvider } from '@posthog/react';
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 if (sentryDsn) {
