@@ -11,6 +11,8 @@ type RouteConfig = {
   useCases?: string[]; // Optional multiple use case codes (OR logic)
   /** If user has any of these role codes, route is not registered (e.g. calendar for executive office manager) */
   excludeRoleCodes?: string[];
+  /** If set, user must have at least one of these role codes to access the route */
+  requiresRoleCodes?: string[];
 };
 
 function userHasExcludedRole(
