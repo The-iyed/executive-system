@@ -65,24 +65,25 @@ const NotificationsPage: React.FC = () => {
         />
       </div>
 
-      {/* Unified Container */}
+      {/* Grid Container */}
       <div className="rounded-2xl border-2 border-border/40 bg-card shadow-sm overflow-hidden">
-        {/* List */}
-        <div>
+        <div className="p-4">
           {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 px-5 py-3.5 border-b border-border/20 last:border-b-0"
-              >
-                <div className="w-2.5 h-2.5 rounded-full bg-muted animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-2/3 bg-muted rounded animate-pulse" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-border/30 p-4 space-y-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-muted animate-pulse" />
+                    <div className="h-4 w-2/3 bg-muted rounded animate-pulse" />
+                  </div>
+                  <div className="h-3 w-1/2 bg-muted rounded animate-pulse" />
                   <div className="h-3 w-1/3 bg-muted rounded animate-pulse" />
                 </div>
-                <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
-              </div>
-            ))
+              ))}
+            </div>
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-muted-foreground min-h-[400px]">
               <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
@@ -92,13 +93,15 @@ const NotificationsPage: React.FC = () => {
               <p className="text-xs text-muted-foreground/70 mt-1">لم يتم العثور على أي إشعارات مطابقة</p>
             </div>
           ) : (
-            items.map((notification) => (
-              <NotificationCard
-                key={notification.id}
-                notification={notification}
-                onClick={setSelectedId}
-              />
-            ))
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {items.map((notification) => (
+                <NotificationCard
+                  key={notification.id}
+                  notification={notification}
+                  onClick={setSelectedId}
+                />
+              ))}
+            </div>
           )}
         </div>
 

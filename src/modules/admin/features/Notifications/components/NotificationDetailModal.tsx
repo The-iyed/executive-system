@@ -7,10 +7,12 @@ import {
 } from '@/lib/ui/components/dialog';
 import { Button } from '@/lib/ui/components/button';
 import { StatusBadge } from '@/modules/shared/components/status-badge';
-import { RefreshCw, Clock, Mail, Phone, FileText, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Clock, Mail, Phone, FileText, AlertTriangle, Copy } from 'lucide-react';
 import { useNotificationDetail, useRetryNotification } from '../hooks/useNotifications';
 import { NotificationStatus } from '../types';
 import { cn } from '@/lib/ui/lib/utils';
+import { formatDateTimeArabic } from '@/modules/shared/utils/format';
+import { toast } from 'sonner';
 
 interface NotificationDetailModalProps {
   notificationId: string | null;
@@ -24,12 +26,6 @@ const statusLabelMap: Record<NotificationStatus, string> = {
   [NotificationStatus.FAILED]: 'فشل',
 };
 
-const statusAccent: Record<NotificationStatus, string> = {
-  [NotificationStatus.SENT]: 'bg-[#027A48]',
-  [NotificationStatus.PENDING]: 'bg-[#BE8E0B]',
-  [NotificationStatus.FAILED]: 'bg-destructive',
-};
-
 const variableLabelMap: Record<string, string> = {
   request_number: 'رقم الطلب',
   meeting_title: 'عنوان الاجتماع',
@@ -41,7 +37,12 @@ const variableLabelMap: Record<string, string> = {
   delegation_directives: 'توجيهات التفويض',
   meeting_agenda: 'جدول الأعمال',
   circulation_notes: 'ملاحظات التعميم',
+  link: 'الرابط',
 };
+
+function isUrl(value: unknown): boolean {
+  return typeof value === 'string' && value.startsWith('http');
+}
 
 export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
   notificationId,
@@ -50,16 +51,6 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
 }) => {
   const { data: notification, isLoading } = useNotificationDetail(notificationId);
   const retryMutation = useRetryNotification();
-
-  const formattedDate = notification?.created_at
-    ? new Date(notification.created_at).toLocaleDateString('ar-SA', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : '';
 
   const parsedServiceBody = useMemo(() => {
     if (!notification?.service_request_body) return null;
@@ -77,13 +68,14 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
     return Object.entries(variables).filter(([, v]) => v && v !== '—' && v !== '');
   }, [variables]);
 
+  const handleCopyLink = (value: string) => {
+    navigator.clipboard.writeText(value);
+    toast.success('تم نسخ الرابط');
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg p-0 overflow-hidden" dir="rtl">
-        {notification && (
-          <div className={cn('h-1.5 w-full', statusAccent[notification.status] ?? 'bg-muted')} />
-        )}
-
         <div className="p-6">
           {isLoading ? (
             <div className="space-y-4 py-8">
@@ -163,9 +155,21 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                           <span className="text-muted-foreground">
                             {variableLabelMap[key] ?? key}
                           </span>
-                          <span className="text-foreground font-medium max-w-[60%] text-left truncate">
-                            {String(value)}
-                          </span>
+                          {isUrl(value) ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary"
+                              onClick={() => handleCopyLink(String(value))}
+                            >
+                              <Copy className="w-3 h-3" />
+                              نسخ الرابط
+                            </Button>
+                          ) : (
+                            <span className="text-foreground font-medium max-w-[60%] text-left truncate">
+                              {String(value)}
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -175,7 +179,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                 {/* Timestamp */}
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="w-3.5 h-3.5" />
-                  تاريخ الإنشاء: {formattedDate}
+                  تاريخ الإنشاء: {formatDateTimeArabic(notification.created_at)}
                 </div>
 
                 {/* Error */}
