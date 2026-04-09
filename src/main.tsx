@@ -7,18 +7,21 @@ import { ErrorBoundary } from '@/modules/shared';
 import { AuthProvider } from '@/modules/auth';
 import { App } from './app';
 import './styles.css';
-import { SENTRY_DSN } from '@/lib/env';
 import * as Sentry from "@sentry/react";
-import posthog from 'posthog-js';
-import { PostHogProvider } from '@posthog/react';
 
-const SENTRY_DSN_VALUE = SENTRY_DSN;
-
-if (false) { // Sentry disabled in non-production
+const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
+if (sentryDsn) {
   Sentry.init({
-    dsn: SENTRY_DSN_VALUE,
-    environment: "development",
+    dsn: sentryDsn,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+    ],
+    tracePropagationTargets: ["localhost", /^https:\/\/.*\.momrahai\.com/],
     sendDefaultPii: true,
+    debug: false,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
   });
 }
 
