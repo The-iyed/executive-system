@@ -229,6 +229,10 @@ export const getDefaultRouteForUser = (
     return PATH_GUIDING_LIGHT;
   }
 
+  if (roles?.some((r) => r.code === 'ADMIN')) {
+    return ADMIN_PATH.NOTIFICATIONS;
+  }
+
   if (!useCases || useCases.length === 0) {
     return UC01_PATH.MEETINGS;
   }
