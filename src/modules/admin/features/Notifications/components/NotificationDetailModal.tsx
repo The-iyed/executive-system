@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,7 @@ import {
 } from '@/lib/ui/components/dialog';
 import { Button } from '@/lib/ui/components/button';
 import { StatusBadge } from '@/modules/shared/components/status-badge';
-import { RefreshCw, Clock, User, Mail, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Clock, Mail, Phone, FileText, AlertTriangle } from 'lucide-react';
 import { useNotificationDetail, useRetryNotification } from '../hooks/useNotifications';
 import { NotificationStatus } from '../types';
 
@@ -31,7 +31,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
   const { data: notification, isLoading } = useNotificationDetail(notificationId);
   const retryMutation = useRetryNotification();
 
-  const formattedCreated = notification?.created_at
+  const formattedDate = notification?.created_at
     ? new Date(notification.created_at).toLocaleDateString('ar-SA', {
         year: 'numeric',
         month: 'long',
@@ -41,15 +41,17 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
       })
     : '';
 
-  const formattedSent = notification?.sent_at
-    ? new Date(notification.sent_at).toLocaleDateString('ar-SA', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null;
+  const parsedServiceBody = useMemo(() => {
+    if (!notification?.service_request_body) return null;
+    try {
+      return JSON.parse(notification.service_request_body);
+    } catch {
+      return null;
+    }
+  }, [notification?.service_request_body]);
+
+  const templateCode = parsedServiceBody?.code ?? null;
+  const variables = parsedServiceBody?.variables ?? null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -65,7 +67,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
             <DialogHeader>
               <div className="flex items-center justify-between gap-3">
                 <DialogTitle className="text-base font-bold">
-                  {notification.title}
+                  {notification.subject}
                 </DialogTitle>
                 <StatusBadge
                   status={notification.status}
@@ -75,18 +77,31 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
             </DialogHeader>
 
             <div className="space-y-4 mt-2">
+              {/* Type & Template */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                  <FileText className="w-3.5 h-3.5" />
+                  {notification.notification_type === 'SMS' ? 'رسالة نصية' : 'بريد إلكتروني'}
+                </span>
+                {templateCode && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary font-medium">
+                    قالب: {templateCode}
+                  </span>
+                )}
+              </div>
+
               {/* Recipient */}
               <div className="space-y-1.5">
-                {notification.recipient_name && (
+                {notification.recipient_email && (
                   <div className="flex items-center gap-2 text-sm text-foreground">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    <span>{notification.recipient_name}</span>
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    <span>{notification.recipient_email}</span>
                   </div>
                 )}
-                {notification.recipient_email && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    <span>{notification.recipient_email}</span>
+                {notification.recipient_phone && (
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span>{notification.recipient_phone}</span>
                   </div>
                 )}
               </div>
@@ -98,25 +113,44 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                 </p>
               </div>
 
-              {/* Timestamps */}
-              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  تاريخ الإنشاء: {formattedCreated}
-                </span>
-                {formattedSent && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    تاريخ الإرسال: {formattedSent}
-                  </span>
-                )}
+              {/* Key variables from template */}
+              {variables && (
+                <div className="rounded-xl border border-border p-3 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">بيانات القالب</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    {variables.request_number && (
+                      <>
+                        <span className="text-muted-foreground">رقم الطلب</span>
+                        <span className="text-foreground font-medium">{variables.request_number}</span>
+                      </>
+                    )}
+                    {variables.meeting_title && (
+                      <>
+                        <span className="text-muted-foreground">عنوان الاجتماع</span>
+                        <span className="text-foreground font-medium">{variables.meeting_title}</span>
+                      </>
+                    )}
+                    {variables.date_and_time && (
+                      <>
+                        <span className="text-muted-foreground">التاريخ والوقت</span>
+                        <span className="text-foreground font-medium">{variables.date_and_time}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Timestamp */}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="w-3.5 h-3.5" />
+                تاريخ الإنشاء: {formattedDate}
               </div>
 
-              {/* Error message */}
-              {notification.status === NotificationStatus.FAILED && notification.error_message && (
+              {/* Error */}
+              {notification.status === NotificationStatus.FAILED && notification.failure_reason && (
                 <div className="flex items-start gap-2 rounded-xl bg-destructive/10 p-3">
                   <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                  <p className="text-sm text-destructive">{notification.error_message}</p>
+                  <p className="text-sm text-destructive">{notification.failure_reason}</p>
                 </div>
               )}
 
