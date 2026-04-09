@@ -258,6 +258,10 @@ export const getNavigationItemsForUser = (
   useCases?: string[],
   userRoles?: Array<{ code: string }>
 ): NavItem[] => {
+  if (userRoles?.some((r) => r.code === 'ADMIN')) {
+    return USE_CASE_CONFIGS['ADMIN'].navigationItems;
+  }
+
   if (!useCases || useCases.length === 0) {
     return USE_CASE_CONFIGS['UC-01'].navigationItems;
   }
