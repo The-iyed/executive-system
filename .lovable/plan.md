@@ -1,26 +1,26 @@
 
 
-## Plan: Fix admin user default route
+## Plan: Fix navbar for admin — show only admin nav items
 
 ### Problem
-When an admin logs in with `use_cases: []` and `roles: [{ code: "ADMIN" }]`, the `getDefaultRouteForUser` function falls into the `if (!useCases || useCases.length === 0)` branch and returns `/meetings` (UC-01 default). The admin has no use_cases, so they should be routed to `/notifications` instead.
+`getNavigationItemsForUser` checks `useCases` first. When admin has `use_cases: []`, it hits line 261–262 and falls back to UC-01 nav items ("الطلبات الحالية"), ignoring the admin role entirely.
 
 ### Change to `src/modules/shared/utils/useCaseConfig.ts`
 
-In `getDefaultRouteForUser`, add an ADMIN role check **before** the empty use_cases fallback:
+In `getNavigationItemsForUser` (line 257), add an ADMIN role check **before** the empty use_cases fallback:
 
 ```typescript
-// After minister check (line 230), before the empty useCases check (line 232):
-if (roles?.some((r) => r.code === 'ADMIN')) {
-  return '/notifications';
+// Add after line 259, before the empty useCases check:
+if (userRoles?.some((r) => r.code === 'ADMIN')) {
+  return USE_CASE_CONFIGS['ADMIN'].navigationItems;
 }
 ```
 
-This ensures admin users with empty `use_cases` are routed to their admin dashboard (`/notifications`) instead of `/meetings`.
+This returns only the admin navigation items (الإشعارات) for admin users, instead of falling back to UC-01.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `src/modules/shared/utils/useCaseConfig.ts` | Add ADMIN role check in `getDefaultRouteForUser` before the empty use_cases fallback, redirecting to `/notifications` |
+| `src/modules/shared/utils/useCaseConfig.ts` | Add ADMIN role check at top of `getNavigationItemsForUser` to return admin-only nav items |
 
