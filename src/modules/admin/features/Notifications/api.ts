@@ -1,12 +1,12 @@
 import axiosInstance from '@/modules/auth/utils/axios';
-import type { PaginatedNotificationsResponse, NotificationDetail } from './types';
+import type { PaginatedNotificationsResponse, SentNotification } from './types';
 
 export async function fetchNotifications(params: Record<string, any>): Promise<PaginatedNotificationsResponse> {
   const { data } = await axiosInstance.get('/api/v1/admin/sent-notifications', { params });
   return data;
 }
 
-export async function fetchNotificationDetail(id: string): Promise<NotificationDetail> {
+export async function fetchNotificationDetail(id: string): Promise<SentNotification> {
   const { data } = await axiosInstance.get(`/api/v1/admin/sent-notifications/${id}`);
   return data;
 }
