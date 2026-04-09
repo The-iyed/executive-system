@@ -177,21 +177,37 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                           <span className="text-muted-foreground">
                             {variableLabelMap[key] ?? key}
                           </span>
-                          {isUrl(value) ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary"
-                              onClick={() => handleCopyLink(String(value))}
-                            >
-                              <Copy className="w-3 h-3" />
-                              نسخ الرابط
-                            </Button>
-                          ) : (
-                            <span className="text-foreground font-medium max-w-[60%] text-left truncate">
-                              {String(value)}
-                            </span>
-                          )}
+                          {(() => {
+                            const formatted = formatVariableValue(value);
+                            if (formatted.type === 'boolean') {
+                              return (
+                                <span className={cn(
+                                  'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                  formatted.positive ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
+                                )}>
+                                  {formatted.label}
+                                </span>
+                              );
+                            }
+                            if (formatted.type === 'url') {
+                              return (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary"
+                                  onClick={() => handleCopyLink(formatted.value)}
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  نسخ الرابط
+                                </Button>
+                              );
+                            }
+                            return (
+                              <span className="text-foreground font-medium max-w-[60%] text-left truncate">
+                                {formatted.value}
+                              </span>
+                            );
+                          })()}
                         </div>
                       ))}
                     </div>
