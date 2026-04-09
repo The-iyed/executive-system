@@ -1,52 +1,50 @@
 
 
-## Plan: Implement Sentry with full config using env variables
+## Plan: Modernize Admin Notifications List and Detail Modal
 
-### Problem
-Sentry is currently disabled (`if (false)`) in `main.tsx` and the DSN is not set in `.env`.
+### Summary
+Remove the statistics row, improve the list page layout with a cleaner header and smarter pagination (showing limited page numbers with ellipsis instead of all 298 pages), and polish the detail modal.
 
 ### Changes
 
-**1. `.env` — Add Sentry DSN**
-```
-VITE_SENTRY_DSN=https://e8d708e34090cea1ab591f6e92e0bf7c@sentry.momrahai.com/1
-```
+**1. Page Layout (`index.tsx`)**
+- Remove the stats row (3 mini cards) entirely
+- Remove `statusCounts` computation and `stats` array
+- Keep header with gradient icon but make it cleaner — add total count as a subtle badge
+- Move filters into a cleaner inline bar with the header area
+- Replace the current pagination (which renders ALL page numbers — visible in screenshot showing 274-298) with a smart pagination that shows: first, last, current +/- 1, and ellipsis between gaps
+- Add a "showing X of Y" text label next to pagination
 
-**2. `.env.example` — Update Sentry DSN example**
-```
-VITE_SENTRY_DSN=https://e8d708e34090cea1ab591f6e92e0bf7c@sentry.momrahai.com/1
-```
+**2. Notification Card (`NotificationCard.tsx`)**
+- Tighten vertical spacing for a denser, more professional list feel
+- Improve the layout hierarchy — subject bolder, metadata subtler
 
-**3. `src/main.tsx` — Enable Sentry with full config**
-Replace the disabled `if (false)` block (lines 15-23) with a proper initialization matching the provided example:
-```typescript
-const dsn = import.meta.env.VITE_SENTRY_DSN;
-if (dsn) {
-  Sentry.init({
-    dsn,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
-    ],
-    tracePropagationTargets: ["localhost", /^https:\/\/.*\.momrahai\.com/],
-    sendDefaultPii: true,
-    debug: false,
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-  });
-}
-```
-Remove the unused `SENTRY_DSN` import from `@/lib/env`.
+**3. Filters (`NotificationFilters.tsx`)**
+- Remove count badges (since stats are removed, counts from single page are inaccurate anyway)
+- Simplify `counts` prop — make it optional/unused
 
-**4. `src/modules/guiding-light/sentry.client.config.ts` — Update to match**
-Add `browserTracingIntegration()` and `tracePropagationTargets` to keep both configs aligned.
+**4. Detail Modal (`NotificationDetailModal.tsx`)**
+- Render all template variables dynamically (loop over `variables` object keys) instead of hardcoding only 3 fields
+- Add a label mapping for known variable keys (Arabic labels)
+- Improve body section with a label header
+- Better spacing and section grouping
+
+**5. Smart Pagination Logic**
+- Show pages: 1, ..., current-1, current, current+1, ..., lastPage
+- Use `PaginationEllipsis` from the pagination component
+- Cap visible page buttons to ~7 max
+
+### Technical details
+- No new dependencies
+- All Arabic RTL text preserved
+- Uses existing `cn()`, `StatusBadge`, `Pagination` components
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `.env` | Add `VITE_SENTRY_DSN` |
-| `.env.example` | Update `VITE_SENTRY_DSN` with actual DSN |
-| `src/main.tsx` | Enable Sentry with full integrations (tracing, replay, trace propagation) |
-| `src/modules/guiding-light/sentry.client.config.ts` | Add browserTracingIntegration + tracePropagationTargets |
+| `Notifications/index.tsx` | Remove stats row, smart pagination with ellipsis, "showing X of Y" label |
+| `Notifications/components/NotificationCard.tsx` | Tighter spacing, improved hierarchy |
+| `Notifications/components/NotificationFilters.tsx` | Remove count badges, simplify |
+| `Notifications/components/NotificationDetailModal.tsx` | Dynamic template variables rendering, better sections |
 
