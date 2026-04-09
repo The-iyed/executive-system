@@ -1,10 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Bell, Send, Clock, AlertTriangle, Inbox } from 'lucide-react';
+import { Bell, Inbox } from 'lucide-react';
 import { NotificationFilters } from './components/NotificationFilters';
 import { NotificationCard } from './components/NotificationCard';
 import { NotificationDetailModal } from './components/NotificationDetailModal';
 import { useNotificationList } from './hooks/useNotifications';
-import { NotificationStatus } from './types';
 import {
   Pagination,
   PaginationContent,
@@ -12,7 +11,21 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
+  PaginationEllipsis,
 } from '@/lib/ui/components/pagination';
+
+function getVisiblePages(current: number, total: number): (number | 'ellipsis')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | 'ellipsis')[] = [];
+  pages.push(1);
+  if (current > 3) pages.push('ellipsis');
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push('ellipsis');
+  pages.push(total);
+  return pages;
+}
 
 const NotificationsPage: React.FC = () => {
   const {
@@ -27,72 +40,40 @@ const NotificationsPage: React.FC = () => {
   } = useNotificationList();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const visiblePages = useMemo(() => getVisiblePages(page, totalPages), [page, totalPages]);
 
-  // Compute status counts from current items (approximate from loaded page)
-  const statusCounts = useMemo(() => {
-    const counts = { sent: 0, pending: 0, failed: 0 };
-    items.forEach((n) => {
-      if (n.status === NotificationStatus.SENT) counts.sent++;
-      else if (n.status === NotificationStatus.PENDING) counts.pending++;
-      else if (n.status === NotificationStatus.FAILED) counts.failed++;
-    });
-    return counts;
-  }, [items]);
-
-  const stats = [
-    { label: 'مرسل', count: statusCounts.sent, icon: Send, dotClass: 'bg-[#027A48]' },
-    { label: 'قيد الإرسال', count: statusCounts.pending, icon: Clock, dotClass: 'bg-[#BE8E0B]' },
-    { label: 'فشل', count: statusCounts.failed, icon: AlertTriangle, dotClass: 'bg-destructive' },
-  ];
+  const pageSize = 10;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
 
   return (
     <div className="space-y-5 p-6" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#048F86] to-[#0BB5AA] shadow-md">
-          <Bell className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">الإشعارات المرسلة</h1>
-          <p className="text-sm text-muted-foreground">{total} إشعار</p>
-        </div>
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3">
-        {stats.map((s) => (
-          <div
-            key={s.label}
-            className="flex items-center gap-3 rounded-xl border border-border/40 bg-card p-3.5 shadow-sm"
-          >
-            <div className={`w-2.5 h-2.5 rounded-full ${s.dotClass} shrink-0`} />
-            <div className="min-w-0">
-              <p className="text-lg font-bold text-foreground leading-tight">{s.count}</p>
-              <p className="text-[11px] text-muted-foreground">{s.label}</p>
-            </div>
+      {/* Header + Filters */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#048F86] to-[#0BB5AA] shadow-md">
+            <Bell className="w-5 h-5 text-white" />
           </div>
-        ))}
+          <div>
+            <h1 className="text-xl font-bold text-foreground">الإشعارات المرسلة</h1>
+            <p className="text-sm text-muted-foreground">{total} إشعار</p>
+          </div>
+        </div>
+        <NotificationFilters
+          activeStatus={statusFilter}
+          onStatusChange={setStatusFilter}
+        />
       </div>
 
       {/* Unified Container */}
       <div className="rounded-2xl border-2 border-border/40 bg-card shadow-sm overflow-hidden">
-        {/* Filters bar */}
-        <div className="border-b border-border/30 bg-muted/20 px-5 py-3">
-          <NotificationFilters
-            activeStatus={statusFilter}
-            onStatusChange={setStatusFilter}
-            counts={statusCounts}
-          />
-        </div>
-
         {/* List */}
         <div>
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 px-5 py-4 border-b border-border/20 last:border-b-0"
+                className="flex items-center gap-4 px-5 py-3.5 border-b border-border/20 last:border-b-0"
               >
                 <div className="w-2.5 h-2.5 rounded-full bg-muted animate-pulse" />
                 <div className="flex-1 space-y-2">
@@ -121,9 +102,12 @@ const NotificationsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Pagination inside container */}
+        {/* Pagination */}
         {totalPages > 1 && (
-          <div className="border-t border-border/30 px-5 py-3">
+          <div className="border-t border-border/30 px-5 py-3 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              عرض {from}–{to} من {total}
+            </span>
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
@@ -132,13 +116,19 @@ const NotificationsPage: React.FC = () => {
                     disabled={page === 1}
                   />
                 </PaginationItem>
-                {pageNumbers.map((p) => (
-                  <PaginationItem key={p}>
-                    <PaginationLink isActive={p === page} onClick={() => setPage(p)}>
-                      {p}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
+                {visiblePages.map((p, idx) =>
+                  p === 'ellipsis' ? (
+                    <PaginationItem key={`e-${idx}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={p}>
+                      <PaginationLink isActive={p === page} onClick={() => setPage(p)}>
+                        {p}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                )}
                 <PaginationItem>
                   <PaginationNext
                     onClick={() => setPage(Math.min(totalPages, page + 1))}
