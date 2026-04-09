@@ -1,40 +1,27 @@
 
 
-## Plan: Simplify to single badge with source context in description
+## Plan: Gate admin routes by ADMIN role instead of use_cases
 
-### Change
+### Problem
+Admin routes (e.g. `/notifications`) are currently accessible to all authenticated users because they have no `useCase` filter. The user wants them restricted to users with `roles: [{ code: "ADMIN" }]`.
 
-Replace the two separate badges (source + scope) with a **single badge** based on `is_internal`, plus a small text note indicating the meeting source (Outlook or النظام).
+### Approach
+Add a `requiresRoleCodes` property to the route config type and update the filter logic. Admin routes will specify `requiresRoleCodes: ['ADMIN']`, and `filterRoutesByUseCase` will exclude routes when the user lacks the required role.
 
-**Lines 187–204** in `EventDetailModal.tsx` — replace with:
+### Changes
 
-```tsx
-<div className="flex items-center gap-1.5 flex-wrap">
-  {/* Scope badge — the only badge */}
-  {display.is_internal !== undefined && (
-    <span className={cn(
-      'text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
-      display.is_internal ? 'bg-primary/10 text-primary' : 'bg-amber-500/10 text-amber-600',
-    )}>
-      {display.is_internal ? <Users className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-      {display.is_internal ? 'اجتماع داخلي' : 'اجتماع خارجي'}
-    </span>
-  )}
-  {/* Source note */}
-  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-    {display.meetingId ? <Building2 className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
-    {display.meetingId ? 'تم الإنشاء من النظام' : 'تمت المزامنة من Outlook'}
-  </span>
-</div>
-```
+**1. `src/modules/shared/utils/routeFilter.ts`**
+- Add `requiresRoleCodes?: string[]` to the `RouteConfig` type
+- After the existing `excludeRoleCodes` filter, add a check: if `route.requiresRoleCodes` is set, the user must have at least one matching role code — otherwise the route is excluded
 
-This keeps one prominent badge for internal/external scope, and adds a subtle muted text with icon to indicate the source — no second badge, just a quiet descriptor.
-
-Remove unused imports if any (`Building2`, `Cloud` stay; `Users`, `Globe` stay).
+**2. `src/modules/admin/routes/routes.tsx`**
+- Add `requiresRoleCodes: ['ADMIN']` to each admin route config (currently the notifications route)
+- Add `requiresRoleCodes` to the local `RouteConfig` type
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `EventDetailModal.tsx` | Replace dual badges with single scope badge + muted source text |
+| `src/modules/shared/utils/routeFilter.ts` | Add `requiresRoleCodes` to type + filtering logic |
+| `src/modules/admin/routes/routes.tsx` | Add `requiresRoleCodes: ['ADMIN']` to notifications route |
 
