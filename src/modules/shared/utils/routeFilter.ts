@@ -53,8 +53,13 @@ export const filterRoutesByUseCase = (
     });
   })();
 
-  return byUseCase.filter(
-    (route) => !userHasExcludedRole(userRoles, route.excludeRoleCodes)
-  );
+  return byUseCase
+    .filter((route) => !userHasExcludedRole(userRoles, route.excludeRoleCodes))
+    .filter((route) => {
+      if (!route.requiresRoleCodes?.length) return true;
+      if (!userRoles?.length) return false;
+      const codes = new Set(userRoles.map((r) => r.code));
+      return route.requiresRoleCodes.some((c) => codes.has(c));
+    });
 };
 

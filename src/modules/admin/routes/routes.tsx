@@ -10,6 +10,7 @@ type RouteConfig = {
   component: React.ComponentType<any>
   guard?: React.ComponentType<any> | typeof Fragment | any
   layout?: React.ComponentType<any> | typeof Fragment
+  requiresRoleCodes?: string[]
 } & RouteProps
 
 const routes: RouteConfig[] = [
@@ -19,6 +20,7 @@ const routes: RouteConfig[] = [
     path: PATH.NOTIFICATIONS,
     component: lazy(() => import('../features/Notifications')),
     layout: SharedLayout,
+    requiresRoleCodes: ['ADMIN'],
   },
   
 ]
