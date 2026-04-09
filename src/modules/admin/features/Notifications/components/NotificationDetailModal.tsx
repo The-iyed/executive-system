@@ -34,11 +34,33 @@ const variableLabelMap: Record<string, string> = {
   name: 'الاسم',
   card_name: 'اسم البطاقة',
   assistant_name: 'اسم المساعد',
+  consultant_name: 'اسم المستشار',
   delegation_directives: 'توجيهات التفويض',
   meeting_agenda: 'جدول الأعمال',
   circulation_notes: 'ملاحظات التعميم',
   link: 'الرابط',
+  is_preliminary_booking: 'حجز مبدئي',
+  has_presentation: 'يوجد عرض تقديمي',
+  online_meeting_link: 'رابط الاجتماع الإلكتروني',
+  webex_meeting_join_link: 'رابط Webex للانضمام',
+  meeting_number: 'رقم الاجتماع',
+  webex_meeting_number: 'رقم اجتماع Webex',
+  password: 'كلمة المرور',
+  webex_password: 'كلمة مرور Webex',
+  sip_address: 'عنوان SIP',
+  webex_sip_address: 'عنوان SIP Webex',
+  video_system: 'نظام الفيديو',
+  host_key: 'مفتاح المضيف',
+  webex_host_key: 'مفتاح مضيف Webex',
 };
+
+function formatVariableValue(value: unknown): { type: 'boolean'; label: string; positive: boolean } | { type: 'url'; value: string } | { type: 'text'; value: string } {
+  const str = String(value);
+  if (str === 'true') return { type: 'boolean', label: 'نعم', positive: true };
+  if (str === 'false') return { type: 'boolean', label: 'لا', positive: false };
+  if (isUrl(value)) return { type: 'url', value: str };
+  return { type: 'text', value: str };
+}
 
 function isUrl(value: unknown): boolean {
   return typeof value === 'string' && value.startsWith('http');
@@ -155,21 +177,37 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                           <span className="text-muted-foreground">
                             {variableLabelMap[key] ?? key}
                           </span>
-                          {isUrl(value) ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary"
-                              onClick={() => handleCopyLink(String(value))}
-                            >
-                              <Copy className="w-3 h-3" />
-                              نسخ الرابط
-                            </Button>
-                          ) : (
-                            <span className="text-foreground font-medium max-w-[60%] text-left truncate">
-                              {String(value)}
-                            </span>
-                          )}
+                          {(() => {
+                            const formatted = formatVariableValue(value);
+                            if (formatted.type === 'boolean') {
+                              return (
+                                <span className={cn(
+                                  'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                  formatted.positive ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
+                                )}>
+                                  {formatted.label}
+                                </span>
+                              );
+                            }
+                            if (formatted.type === 'url') {
+                              return (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary"
+                                  onClick={() => handleCopyLink(formatted.value)}
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  نسخ الرابط
+                                </Button>
+                              );
+                            }
+                            return (
+                              <span className="text-foreground font-medium max-w-[60%] text-left truncate">
+                                {formatted.value}
+                              </span>
+                            );
+                          })()}
                         </div>
                       ))}
                     </div>
