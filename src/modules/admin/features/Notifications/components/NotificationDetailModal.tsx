@@ -38,7 +38,7 @@ const variableLabelMap: Record<string, string> = {
   delegation_directives: 'توجيهات التفويض',
   meeting_agenda: 'جدول الأعمال',
   circulation_notes: 'ملاحظات التعميم',
-  link: 'الرابط',
+  link: 'رابط تفاصيل الاجتماع',
   is_preliminary_booking: 'حجز مبدئي',
   has_presentation: 'يوجد عرض تقديمي',
   online_meeting_link: 'رابط الاجتماع الإلكتروني',
