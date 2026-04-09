@@ -30,6 +30,19 @@ const statusAccent: Record<NotificationStatus, string> = {
   [NotificationStatus.FAILED]: 'bg-destructive',
 };
 
+const variableLabelMap: Record<string, string> = {
+  request_number: 'رقم الطلب',
+  meeting_title: 'عنوان الاجتماع',
+  date_and_time: 'التاريخ والوقت',
+  meeting_location: 'موقع الاجتماع',
+  name: 'الاسم',
+  card_name: 'اسم البطاقة',
+  assistant_name: 'اسم المساعد',
+  delegation_directives: 'توجيهات التفويض',
+  meeting_agenda: 'جدول الأعمال',
+  circulation_notes: 'ملاحظات التعميم',
+};
+
 export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
   notificationId,
   open,
@@ -59,11 +72,14 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
 
   const templateCode = parsedServiceBody?.code ?? null;
   const variables = parsedServiceBody?.variables ?? null;
+  const variableEntries = useMemo(() => {
+    if (!variables || typeof variables !== 'object') return [];
+    return Object.entries(variables).filter(([, v]) => v && v !== '—' && v !== '');
+  }, [variables]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg p-0 overflow-hidden" dir="rtl">
-        {/* Status accent bar */}
         {notification && (
           <div className={cn('h-1.5 w-full', statusAccent[notification.status] ?? 'bg-muted')} />
         )}
@@ -103,7 +119,6 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                   )}
                 </div>
 
-                {/* Divider */}
                 <div className="border-t border-border/30" />
 
                 {/* Recipient */}
@@ -124,36 +139,35 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
 
                 {/* Body */}
                 <div className="rounded-xl bg-muted/40 p-4">
+                  <p className="text-[11px] font-medium text-muted-foreground mb-1.5">محتوى الإشعار</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                     {notification.body}
                   </p>
                 </div>
 
-                {/* Template variables */}
-                {variables && (
+                {/* Dynamic template variables */}
+                {variableEntries.length > 0 && (
                   <div className="rounded-xl border border-border/40 overflow-hidden">
                     <div className="px-4 py-2.5 bg-muted/30 border-b border-border/30">
                       <p className="text-xs font-semibold text-muted-foreground">بيانات القالب</p>
                     </div>
                     <div className="divide-y divide-border/20">
-                      {variables.request_number && (
-                        <div className="flex items-center justify-between px-4 py-2.5 text-xs">
-                          <span className="text-muted-foreground">رقم الطلب</span>
-                          <span className="text-foreground font-medium">{variables.request_number}</span>
+                      {variableEntries.map(([key, value], idx) => (
+                        <div
+                          key={key}
+                          className={cn(
+                            'flex items-center justify-between px-4 py-2.5 text-xs',
+                            idx % 2 === 1 && 'bg-muted/10'
+                          )}
+                        >
+                          <span className="text-muted-foreground">
+                            {variableLabelMap[key] ?? key}
+                          </span>
+                          <span className="text-foreground font-medium max-w-[60%] text-left truncate">
+                            {String(value)}
+                          </span>
                         </div>
-                      )}
-                      {variables.meeting_title && (
-                        <div className="flex items-center justify-between px-4 py-2.5 text-xs bg-muted/10">
-                          <span className="text-muted-foreground">عنوان الاجتماع</span>
-                          <span className="text-foreground font-medium">{variables.meeting_title}</span>
-                        </div>
-                      )}
-                      {variables.date_and_time && (
-                        <div className="flex items-center justify-between px-4 py-2.5 text-xs">
-                          <span className="text-muted-foreground">التاريخ والوقت</span>
-                          <span className="text-foreground font-medium">{variables.date_and_time}</span>
-                        </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
@@ -177,7 +191,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                   <Button
                     onClick={() => retryMutation.mutate(notification.id)}
                     disabled={retryMutation.isPending}
-                    className="w-full bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] text-white border-0 transition-all hover:scale-[1.03] active:scale-[0.97]"
+                    className="w-full bg-gradient-to-l from-[#048F86] via-[#069E95] to-[#0BB5AA] text-white border-0 transition-all hover:scale-[1.01] active:scale-[0.99]"
                   >
                     <RefreshCw className={cn('w-4 h-4', retryMutation.isPending && 'animate-spin')} />
                     {retryMutation.isPending ? 'جاري إعادة الإرسال...' : 'إعادة الإرسال'}
