@@ -89,8 +89,16 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
 
               {/* TEMPORARY: Sentry test button */}
               <button
-                onClick={() => { throw new Error('Sentry Test Error — safe to ignore'); }}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('https://api.momrahai.com/sentry-test-404');
+                    if (!res.ok) throw new Error(`Sentry Network Test — HTTP ${res.status}`);
+                  } catch (error) {
+                    Sentry.captureException(error, { tags: { test: true, type: 'network' } });
+                    toast.error('تم إرسال خطأ تجريبي إلى Sentry');
+                  }
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-destructive/60 hover:bg-destructive/10 hover:text-destructive transition-colors"
                 title="Test Sentry"
               >
                 <Bug className="w-[18px] h-[18px]" />
