@@ -48,12 +48,6 @@ export const MODELS_LOGO_BASE_URL = getEnv(
   'https://models.dev'
 );
 
-/** Sentry DSN (optional). */
-export const SENTRY_DSN = getEnv(
-  'VITE_SENTRY_DSN',
-  ''
-);
-
 /** SSO enabled (OIDC); when "true", login uses IdP redirect. */
 export const SSO_ENABLED = getEnv('VITE_SSO_ENABLED', '') === 'true';
 
