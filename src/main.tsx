@@ -19,7 +19,7 @@ if (sentryDsn) {
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration(),
     ],
-    tracePropagationTargets: ["localhost", /^https:\/\/.*\.momrahai\.com/],
+    tracePropagationTargets: ["localhost", /^https:\/\/.*\.momrahai\.com/, /^https:\/\/.*\.massar-academy\.com/],
     sendDefaultPii: true,
     debug: false,
     replaysSessionSampleRate: 0.1,
