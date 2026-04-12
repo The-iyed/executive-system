@@ -85,6 +85,15 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
               {/* Mobile menu trigger */}
               <MobileMenuTrigger onClick={() => setMobileMenuOpen(true)} />
 
+              {/* TEMPORARY: Sentry test button */}
+              <button
+                onClick={() => { throw new Error('Sentry Test Error — safe to ignore'); }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                title="Test Sentry"
+              >
+                <Bug className="w-[18px] h-[18px]" />
+              </button>
+
               {/* Notification bell */}
               <button
                 className="relative w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors"
