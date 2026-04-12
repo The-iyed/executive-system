@@ -87,19 +87,16 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
               {/* Mobile menu trigger */}
               <MobileMenuTrigger onClick={() => setMobileMenuOpen(true)} />
 
-              {/* TEMPORARY: Sentry test button */}
+              {/* TEMPORARY: Sentry test button — crashes the page */}
               <button
-                onClick={async () => {
-                  try {
-                    const res = await fetch('https://api.momrahai.com/sentry-test-404');
-                    if (!res.ok) throw new Error(`Sentry Network Test — HTTP ${res.status}`);
-                  } catch (error) {
-                    Sentry.captureException(error, { tags: { test: true, type: 'network' } });
-                    toast.error('تم إرسال خطأ تجريبي إلى Sentry');
-                  }
+                onClick={() => {
+                  toast.error('💥 تعطل تجريبي — سيتم إرسال التقرير إلى Sentry');
+                  setTimeout(() => {
+                    throw new Error('Sentry Crash Test — unhandled fatal error 💀');
+                  }, 500);
                 }}
                 className="w-9 h-9 rounded-full flex items-center justify-center text-destructive/60 hover:bg-destructive/10 hover:text-destructive transition-colors"
-                title="Test Sentry"
+                title="Crash Test (Sentry)"
               >
                 <Bug className="w-[18px] h-[18px]" />
               </button>
