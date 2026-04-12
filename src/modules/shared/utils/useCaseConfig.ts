@@ -16,6 +16,7 @@ import { PATH as UC06_PATH } from '../../UC06/routes/paths';
 import { PATH as UC09_PATH } from '../../UC09/routes/paths';
 import { PATH as uc13_PATH } from '../../UC-13/routes/paths';
 import { PATH as UC19_PATH } from '../../UC19/routes/paths';
+import { PATH as ADMIN_PATH } from '../../admin/routes/paths';
 
 export interface UseCaseConfig {
   code: string;
@@ -190,6 +191,18 @@ export const USE_CASE_CONFIGS: Record<string, UseCaseConfig> = {
       },
     ],
   },
+  'ADMIN': {
+    code: 'ADMIN',
+    defaultRoute: ADMIN_PATH.NOTIFICATIONS,
+    navigationItems: [
+      {
+        id: 'notifications',
+        icon: 'solar:bell-outline',
+        label: 'الإشعارات',
+        path: ADMIN_PATH.NOTIFICATIONS,
+      },
+    ],
+  },
 };
 
 /**
@@ -214,6 +227,10 @@ export const getDefaultRouteForUser = (
 ): string => {
   if (isMinisterUser(roles)) {
     return PATH_GUIDING_LIGHT;
+  }
+
+  if (roles?.some((r) => r.code === 'ADMIN')) {
+    return ADMIN_PATH.NOTIFICATIONS;
   }
 
   if (!useCases || useCases.length === 0) {
@@ -241,6 +258,10 @@ export const getNavigationItemsForUser = (
   useCases?: string[],
   userRoles?: Array<{ code: string }>
 ): NavItem[] => {
+  if (userRoles?.some((r) => r.code === 'ADMIN')) {
+    return USE_CASE_CONFIGS['ADMIN'].navigationItems;
+  }
+
   if (!useCases || useCases.length === 0) {
     return USE_CASE_CONFIGS['UC-01'].navigationItems;
   }

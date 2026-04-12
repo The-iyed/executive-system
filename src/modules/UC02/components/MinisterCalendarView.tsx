@@ -801,7 +801,7 @@ export const MinisterCalendarView: React.FC<MinisterCalendarViewProps> = ({
                 position: (m.position ?? m.position_title ?? '') as string,
                 mobile: (m.mobile ?? m.mobile_number ?? '') as string,
                 email: (m.email ?? '') as string,
-                is_required: Boolean(m.is_presence_required),
+                is_presence_required: Boolean(m?.is_presence_required),
               }));
 
               if (isEdit) {

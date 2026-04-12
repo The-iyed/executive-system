@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
+import * as Sentry from '@sentry/react';
+import { toast } from 'sonner';
 import { useAuth } from '@/modules/auth';
 import { useContainerScroll, useUserNavigation } from '@/modules/shared/hooks';
 import { NavigationActions, NavItem } from '../navigation-actions';
@@ -7,7 +9,7 @@ import { UserAvatar } from '../user-avatar';
 import { WelcomeSectionProps } from '../welcome-section';
 import { type ContentBarFilterTab } from '../content-bar';
 import { Logo } from '../logo';
-import { Bell } from 'lucide-react';
+import { Bell, Bug } from 'lucide-react';
 import { MobileNavDrawer, MobileMenuTrigger } from '../mobile-nav-drawer';
 
 export interface SharedLayoutProps {
@@ -84,6 +86,20 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
             <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
               {/* Mobile menu trigger */}
               <MobileMenuTrigger onClick={() => setMobileMenuOpen(true)} />
+
+              {/* TEMPORARY: Sentry test button — crashes the page */}
+              <button
+                onClick={() => {
+                  toast.error('💥 تعطل تجريبي — سيتم إرسال التقرير إلى Sentry');
+                  setTimeout(() => {
+                    throw new Error('Sentry Crash Test — unhandled fatal error 💀');
+                  }, 500);
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-destructive/60 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                title="Crash Test (Sentry)"
+              >
+                <Bug className="w-[18px] h-[18px]" />
+              </button>
 
               {/* Notification bell */}
               <button

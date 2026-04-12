@@ -1,28 +1,24 @@
 
 
-## Plan: Align collapsed actions with metadata tags
+## Plan: Improve Sentry Test Button to Trigger Network Error
 
 ### Problem
-The action buttons in the expanded row don't have the same left-side spacing as the metadata tags above them. The chevron and status badge area creates a visual indent on the left that the actions row doesn't match.
+The current bug button throws a plain JS `throw new Error(...)` which may not fully test Sentry's network/fetch error capturing. We want it to simulate a failed network request so we can verify Sentry captures HTTP errors properly.
 
-### Change to `DirectiveCard.tsx`
+### Changes
 
-On line 161, the actions container has `pr-9` for right padding but no left padding. Add `pl-9` to match the left-side spacing of the chevron + badge area, so actions visually align under the metadata tags.
+**`src/modules/shared/components/Layout/shared-layout.tsx`**
 
-```text
-Before:  <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9">
-After:   <div className="flex justify-end items-center gap-1.5 flex-wrap pr-9 pl-9">
-```
+Replace the `throw new Error(...)` handler with a function that:
+1. Makes a `fetch()` call to a non-existent endpoint (e.g. `https://api.momrahai.com/sentry-test-404`) — this will produce a real network failure
+2. Wraps it in a try/catch that captures the error via `Sentry.captureException()` with extra context (e.g. `tags: { test: true }`)
+3. Shows a small toast notification confirming the test error was sent to Sentry
 
-### Layout
-```text
-Row 1: [✓] [title...] ——— [نسخ] [جدولة] [مهم] [عاجل] [28 مارس] [مكتمل ●] [⌄]
-Row 2:      [padding-r]    [طلب إجتماع]                          [padding-l]
-```
+This tests both network error capturing and manual `Sentry.captureException` in one click.
 
-### Files changed
+### File changed
 
 | File | Change |
 |---|---|
-| `DirectiveCard.tsx` | Add `pl-9` to actions row container (line 161) |
+| `shared-layout.tsx` | Import `Sentry`, replace `throw new Error` with async fetch to bad URL + `Sentry.captureException` + toast feedback |
 

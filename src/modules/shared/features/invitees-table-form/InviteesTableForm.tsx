@@ -33,10 +33,12 @@ const InviteesTableForm = ({
   showAiSuggest?: boolean;
 }) => {
   const normalizeInvitees = (rows: TableRow[]) => rows.map(r => {
-    const { is_required, ...rest } = r as any;
+    const { ...rest } = r as any;
+    const requiredValue = !Boolean(r.is_presence_required);
     return {
       ...rest,
-      is_presence_required: r.is_presence_required ?? is_required ?? false,
+      // In form UI this checkbox represents "attendance optional".
+      is_presence_required: requiredValue,
     };
   });
 

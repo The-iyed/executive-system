@@ -1,7 +1,7 @@
 import React, { useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink, Settings, Check, ArrowLeft } from 'lucide-react';
+import { User, Calendar, Clock, MapPin, X, Pencil, Video, Copy, ExternalLink, Settings, Check, ArrowLeft, RefreshCw, Building2, Cloud, Users, Globe } from 'lucide-react';
 import { Dialog, DialogContent, cn, Skeleton } from '@/lib/ui';
 import { toast } from '@/lib/ui/components/use-toast';
 import type { CalendarEventData } from '@/modules/shared';
@@ -184,16 +184,21 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
                 </div>
                 <div className="flex flex-col min-w-0 gap-1">
                   <h3 className="text-foreground font-bold text-[16px] leading-6 break-words">{display.title}</h3>
-                  {display.is_internal !== undefined && (
-                    <span className={cn(
-                      'text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit',
-                      display.is_internal
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-amber-500/10 text-amber-600',
-                    )}>
-                      {display.is_internal ? 'داخلي' : 'خارجي'}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {display.is_internal !== undefined && (
+                      <span className={cn(
+                        'text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
+                        display.is_internal ? 'bg-primary/10 text-primary' : 'bg-amber-500/10 text-amber-600',
+                      )}>
+                        {display.is_internal ? <Users className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                        {display.is_internal ? 'اجتماع داخلي' : 'اجتماع خارجي'}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      {display.meetingId ? <Building2 className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
+                      {display.meetingId ? 'تم الإنشاء من النظام' : 'تمت المزامنة من Outlook'}
                     </span>
-                  )}
+                  </div>
                 </div>
               </div>
               <button
@@ -374,28 +379,36 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = memo(({
 
             {/* Actions footer */}
             <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-border/30 bg-muted/5">
-              {display.meetingId && onEdit && (
-                <button
-                  type="button"
-                  onClick={() => onEdit(display.meetingId!)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  تعديل
-                </button>
+              {display.meetingId ? (
+                <>
+                  {onEdit && (
+                    <button
+                      type="button"
+                      onClick={() => onEdit(display.meetingId!)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      تعديل
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigate(`/meeting/${display.meetingId}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/60 text-[12px] font-semibold text-foreground bg-background hover:bg-muted/50 transition-all"
+                  >
+                    عرض التفاصيل
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 text-muted-foreground bg-muted/30 px-3.5 py-2 rounded-lg flex-1">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span className="text-[12px] font-medium">جاري مزامنة البيانات من Outlook، يرجى الانتظار لحظات</span>
+                </div>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  const id = display.meetingId ?? event.id;
-                  onClose();
-                  navigate(`/meeting/${id}`);
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/60 text-[12px] font-semibold text-foreground bg-background hover:bg-muted/50 transition-all"
-              >
-                عرض التفاصيل
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </button>
               {display.isLink && !display.isPhysical && (
                 <a
                   href={display.locationOrLink}

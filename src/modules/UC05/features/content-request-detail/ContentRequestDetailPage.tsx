@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { Send, RotateCcw, MessageSquare, Loader2, AlertCircle } from 'lucide-react';
+import { ConfirmDialog } from '@/modules/shared/components/confirm-dialog/ConfirmDialog';
 import { MeetingStatus, StatusBadge, DetailPageHeader, MeetingActionsBar, AttachmentPreviewDrawer } from '@/modules/shared';
 import { useContentRequestDetailPage } from './hooks/useContentRequestDetailPage';
 import { RequestInfoTab } from './tabs/RequestInfoTab';
@@ -105,10 +106,11 @@ const ContentRequestDetailPage: React.FC = () => {
                 icon: h.sendToSchedulingMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" strokeWidth={1.26} /> : <Send className="w-5 h-5" strokeWidth={1.26} />,
                 label: h.sendToSchedulingMutation.isPending ? 'جاري الإرسال...' : 'إرسال إلى مسؤول الجدولة',
                 onClick: h.handleSendToScheduling,
-                disabled: h.sendToSchedulingMutation.isPending || !h.hasDirectives,
-                disabledReason: !h.hasDirectives
-                  ? 'يرجى إضافة توجيه واحد على الأقل أولاً'
-                  : undefined,
+                disabled: h.sendToSchedulingMutation.isPending 
+                // || !h.hasDirectives,
+                // disabledReason: !h.hasDirectives
+                //   ? 'يرجى إضافة توجيه واحد على الأقل أولاً'
+                //   : undefined,
               },
               {
                 icon: <RotateCcw className="w-5 h-5" strokeWidth={1.26} />,
@@ -145,6 +147,19 @@ const ContentRequestDetailPage: React.FC = () => {
         isLoading={h.isLoadingConsultationRecordsWithDrafts}
         onPublishDraft={h.handlePublishDraft}
         isPublishing={h.publishDraftMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={h.showSendConfirm}
+        onOpenChange={h.setShowSendConfirm}
+        title="إرسال إلى مسؤول الجدولة"
+        description="هل أنت متأكد من إرسال هذا الطلب إلى مسؤول الجدولة؟"
+        confirmLabel="إرسال"
+        cancelLabel="إلغاء"
+        loadingLabel="جاري الإرسال..."
+        onConfirm={h.confirmSendToScheduling}
+        isLoading={h.sendToSchedulingMutation.isPending}
+        variant="primary"
       />
 
       <AttachmentPreviewDrawer

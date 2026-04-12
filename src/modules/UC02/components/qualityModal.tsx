@@ -1,7 +1,7 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/lib/ui';
+import { Dialog, DialogContent } from '@/lib/ui';
 import { useQuery } from '@tanstack/react-query';
 import { evaluateReadiness } from '../data/meetingsApi';
-import { Sparkles, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
+import { Sparkles, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 enum MeetingQualityStatus {
   GOOD = 'good',
@@ -27,7 +27,6 @@ const mapReadinessToStatus = (readiness: string): MeetingQualityStatus => {
 
 const STATUS_CONFIG: Record<MeetingQualityStatus, {
   label: string;
-  percentage: number;
   color: string;
   bgColor: string;
   borderColor: string;
@@ -36,7 +35,6 @@ const STATUS_CONFIG: Record<MeetingQualityStatus, {
 }> = {
   [MeetingQualityStatus.GOOD]: {
     label: 'قوي',
-    percentage: 85,
     color: '#059669',
     bgColor: '#ECFDF5',
     borderColor: '#A7F3D0',
@@ -45,7 +43,6 @@ const STATUS_CONFIG: Record<MeetingQualityStatus, {
   },
   [MeetingQualityStatus.AVERAGE]: {
     label: 'متوسط',
-    percentage: 55,
     color: '#D97706',
     bgColor: '#FFFBEB',
     borderColor: '#FDE68A',
@@ -54,7 +51,6 @@ const STATUS_CONFIG: Record<MeetingQualityStatus, {
   },
   [MeetingQualityStatus.BAD]: {
     label: 'ضعيف',
-    percentage: 25,
     color: '#DC2626',
     bgColor: '#FEF2F2',
     borderColor: '#FECACA',
@@ -73,7 +69,6 @@ function CircularGauge({ percentage, color, label }: { percentage: number; color
   return (
     <div className="relative flex items-center justify-center">
       <svg width="180" height="180" viewBox="0 0 180 180" className="-rotate-90">
-        {/* Track */}
         <circle
           cx="90" cy="90" r={radius}
           fill="none"
@@ -81,7 +76,6 @@ function CircularGauge({ percentage, color, label }: { percentage: number; color
           strokeWidth={strokeWidth}
           strokeLinecap="round"
         />
-        {/* Progress */}
         <circle
           cx="90" cy="90" r={radius}
           fill="none"
@@ -116,6 +110,9 @@ const QualityModal = ({ isOpen, onOpenChange, meetingId }: QualityModalProps) =>
     : MeetingQualityStatus.AVERAGE;
   const meetingQualityReasons: string[] =
     hasStatus && readinessData ? readinessData.reasoning : [];
+
+  // Use the real percentage from the API response
+  const readinessPercentage = readinessData?.readiness_percentage ?? 0;
 
   const config = STATUS_CONFIG[meetingQualityStatus];
   const StatusIcon = config.icon;
@@ -165,7 +162,7 @@ const QualityModal = ({ isOpen, onOpenChange, meetingId }: QualityModalProps) =>
                 className="flex flex-col items-center gap-4 p-5 rounded-xl"
                 style={{ backgroundColor: config.bgColor, border: `1px solid ${config.borderColor}` }}
               >
-                <CircularGauge percentage={config.percentage} color={config.color} label={config.label} />
+                <CircularGauge percentage={readinessPercentage} color={config.color} label={config.label} />
                 <div className="flex items-center gap-2">
                   <StatusIcon className="w-4 h-4" style={{ color: config.color }} />
                   <span className="text-sm font-semibold" style={{ color: config.color }}>
