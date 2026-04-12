@@ -7,7 +7,7 @@ import { UserAvatar } from '../user-avatar';
 import { WelcomeSectionProps } from '../welcome-section';
 import { type ContentBarFilterTab } from '../content-bar';
 import { Logo } from '../logo';
-import { Bell } from 'lucide-react';
+import { Bell, Bug } from 'lucide-react';
 import { MobileNavDrawer, MobileMenuTrigger } from '../mobile-nav-drawer';
 
 export interface SharedLayoutProps {
