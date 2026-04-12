@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
+import * as Sentry from '@sentry/react';
+import { toast } from 'sonner';
 import { useAuth } from '@/modules/auth';
 import { useContainerScroll, useUserNavigation } from '@/modules/shared/hooks';
 import { NavigationActions, NavItem } from '../navigation-actions';
