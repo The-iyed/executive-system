@@ -6,6 +6,7 @@ Sentry.init({
   tracePropagationTargets: ["localhost", /^https:\/\/masar-sentry\.massar-academy\.com/],
   sendDefaultPii: true,
   tracesSampleRate: 0.2,
+  debug: true,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
 });
