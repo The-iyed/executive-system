@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/react";
+import * as Sentry from "@sentry/browser";
 
 Sentry.init({
   dsn: "https://4f0a61b1a1f0136170e431ebbad09046@masar-sentry.massar-academy.com/1",
