@@ -1,4 +1,4 @@
-import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
+import { useEffect, useState, createContext, useContext, ReactNode, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import axiosInstance from '../utils/axios';
 import { clearTokens, getTokens, setTokens } from '../utils/token';
@@ -15,6 +15,7 @@ import {
   initiateLogin,
   logout as oidcLogout,
   getAccessToken,
+  refreshAccessToken,
 } from '@/lib/auth';
 import { userManager } from '@/lib/auth/oidcConfig';
 import type { User as OidcUser } from 'oidc-client-ts';
@@ -39,6 +40,7 @@ interface AuthProviderProps {
 
 interface JwtPayload {
   exp: number;
+  iat?: number;
 }
 
 export const isValidToken = (token: string): boolean => {
@@ -72,6 +74,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const ssoEnabled = isSsoEnabled();
+  const proactiveRefreshTimerRef = useRef<number | null>(null);
+  const proactiveRefreshInFlightRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     setAuthTokenGetter(
@@ -141,9 +145,14 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(null);
       };
 
+      const handleUserLoadedEvent = (loadedUser: OidcUser) => {
+        handleUserLoaded(loadedUser);
+        void scheduleProactiveRefresh();
+      };
+
       const handleAccessTokenExpired = async () => {
         try {
-          const renewedUser = await userManager.signinSilent();
+          const renewedUser = await refreshAccessToken();
           if (renewedUser) {
             handleUserLoaded(renewedUser);
           } else {
@@ -154,14 +163,105 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       };
 
-      userManager.events.addUserLoaded(handleUserLoaded);
+      const clearProactiveRefreshTimer = () => {
+        if (proactiveRefreshTimerRef.current != null) {
+          window.clearTimeout(proactiveRefreshTimerRef.current);
+          proactiveRefreshTimerRef.current = null;
+        }
+      };
+
+      const runProactiveRefresh = async () => {
+        if (proactiveRefreshInFlightRef.current) {
+          await proactiveRefreshInFlightRef.current;
+          return;
+        }
+
+        proactiveRefreshInFlightRef.current = (async () => {
+          try {
+            const renewedUser = await refreshAccessToken();
+            if (renewedUser) {
+              handleUserLoaded(renewedUser);
+              void scheduleProactiveRefresh();
+            } else {
+              await initiateLogin();
+            }
+          } catch {
+            await initiateLogin();
+          } finally {
+            proactiveRefreshInFlightRef.current = null;
+          }
+        })();
+
+        await proactiveRefreshInFlightRef.current;
+      };
+
+      const scheduleProactiveRefresh = async () => {
+        clearProactiveRefreshTimer();
+        const currentUser = await userManager.getUser();
+        if (!currentUser) return;
+
+        let expSec = currentUser.expires_at ?? null;
+        // Legacy bug: expires_at was stored as ms; normalize to seconds.
+        if (expSec != null && expSec > 1e12) {
+          expSec = Math.floor(expSec / 1000);
+        }
+        if (expSec == null && currentUser.access_token) {
+          try {
+            expSec = jwtDecode<JwtPayload>(currentUser.access_token).exp;
+          } catch {
+            expSec = null;
+          }
+        }
+        if (expSec == null) return;
+
+        const nowMs = Date.now();
+        const expiresAtMs = expSec * 1000;
+
+        // Refresh at midpoint of token lifetime (e.g. 30m access token → refresh 15m after iat).
+        let delayMs: number;
+        if (currentUser.access_token) {
+          try {
+            const { exp, iat } = jwtDecode<JwtPayload>(currentUser.access_token);
+            if (typeof iat === 'number' && typeof exp === 'number' && exp > iat) {
+              const midpointMs = (iat + (exp - iat) / 2) * 1000;
+              delayMs = Math.floor(midpointMs - nowMs);
+            } else {
+              delayMs = NaN;
+            }
+          } catch {
+            delayMs = NaN;
+          }
+        } else {
+          delayMs = NaN;
+        }
+
+        if (Number.isNaN(delayMs)) {
+          const ttlMs = expiresAtMs - nowMs;
+          delayMs =
+            ttlMs <= 0 ? 0 : Math.max(Math.floor(ttlMs / 2), 5_000);
+        }
+
+        if (delayMs <= 0) {
+          await runProactiveRefresh();
+          return;
+        }
+
+        proactiveRefreshTimerRef.current = window.setTimeout(() => {
+          void runProactiveRefresh();
+        }, delayMs);
+      };
+
+      userManager.events.addUserLoaded(handleUserLoadedEvent);
       userManager.events.addUserUnloaded(handleUserUnloaded);
       userManager.events.addAccessTokenExpired(handleAccessTokenExpired);
 
-      initializeAuth();
+      initializeAuth().finally(() => {
+        void scheduleProactiveRefresh();
+      });
 
       return () => {
-        userManager.events.removeUserLoaded(handleUserLoaded);
+        clearProactiveRefreshTimer();
+        userManager.events.removeUserLoaded(handleUserLoadedEvent);
         userManager.events.removeUserUnloaded(handleUserUnloaded);
         userManager.events.removeAccessTokenExpired(handleAccessTokenExpired);
       };

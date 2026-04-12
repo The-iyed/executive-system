@@ -122,7 +122,7 @@ const InviteeCard = ({ invitee, columns }: InviteeCardProps) => {
   const hasAccess = !!invitee.access_permission;
   const isConsultant = !!invitee.is_consultant;
   const isMeetingOwner = !!invitee.meeting_owner;
-  const isPresenceRequired = !!invitee.is_presence_required;
+  const isPresenceRequired = !Boolean(invitee.is_presence_required);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -163,7 +163,7 @@ const InviteeCard = ({ invitee, columns }: InviteeCardProps) => {
               )}
               {hasColumn(columns, "is_presence_required") && isPresenceRequired && (
                 <Badge className="text-[11px] font-normal rounded-full px-2.5 py-0.5 bg-red-50 text-red-600 border border-red-500/30">
-                  الحضور إجباري
+                  الحضور اختياري
                 </Badge>
               )}
               {hasColumn(columns, "attendance_mechanism") && channelLabel && (

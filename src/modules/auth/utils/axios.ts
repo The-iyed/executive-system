@@ -3,8 +3,7 @@ import { clearAllBrowserStorage } from "./token";
 import { getAuthToken } from "./tokenGetter";
 import { EXECUTION_SYSTEM_BASE_URL } from "@/lib/env";
 import { getBrowserTimezone } from "@/lib/api/apiTimezone";
-import { isSsoEnabled, initiateLogin } from "@/lib/auth";
-import { userManager } from "@/lib/auth/oidcConfig";
+import { isSsoEnabled, initiateLogin, refreshAccessToken } from "@/lib/auth";
 
 const baseURL = EXECUTION_SYSTEM_BASE_URL;
 const headers = {
@@ -18,10 +17,10 @@ const axiosInstance = axios.create({
   // withCredentials: true,
 });
 
-/** Single in-flight silent renew; many parallel 401s must await the same promise (no duplicate signinSilent). */
-let silentRenewPromise: Promise<unknown> | null = null;
-/** Waiters inside await silentRenewPromise; only clear the shared promise when the last one leaves (avoids a new 401 starting a second renew while others still retry). */
-let silentRenewWaiters = 0;
+/** Single in-flight refresh call shared by concurrent 401s. */
+let refreshPromise: Promise<unknown> | null = null;
+/** Track concurrent waiters so we clear shared refresh only after the batch settles. */
+let refreshWaiters = 0;
 
 let ssoReloginPromise: Promise<void> | null = null;
 
@@ -63,10 +62,13 @@ axiosInstance.interceptors.response.use(
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         }
 
-        silentRenewWaiters += 1;
+        refreshWaiters += 1;
         try {
-          silentRenewPromise ??= userManager.signinSilent();
-          await silentRenewPromise;
+          refreshPromise ??= refreshAccessToken();
+          const refreshed = await refreshPromise;
+          if (!refreshed) {
+            throw new Error("No refresh token available");
+          }
           if (originalRequest) {
             originalRequest._retry = true;
             return axiosInstance(originalRequest);
@@ -77,9 +79,9 @@ axiosInstance.interceptors.response.use(
           ensureSsoRelogin();
           return Promise.reject((error.response && error.response.data) || "حدث خطأ غير متوقع!");
         } finally {
-          silentRenewWaiters -= 1;
-          if (silentRenewWaiters === 0) {
-            silentRenewPromise = null;
+          refreshWaiters -= 1;
+          if (refreshWaiters === 0) {
+            refreshPromise = null;
           }
         }
       }

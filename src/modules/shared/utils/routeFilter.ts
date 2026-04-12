@@ -11,6 +11,8 @@ type RouteConfig = {
   useCases?: string[]; // Optional multiple use case codes (OR logic)
   /** If user has any of these role codes, route is not registered (e.g. calendar for executive office manager) */
   excludeRoleCodes?: string[];
+  /** If set, user must have at least one of these role codes to access the route */
+  requiresRoleCodes?: string[];
 };
 
 function userHasExcludedRole(
@@ -51,8 +53,13 @@ export const filterRoutesByUseCase = (
     });
   })();
 
-  return byUseCase.filter(
-    (route) => !userHasExcludedRole(userRoles, route.excludeRoleCodes)
-  );
+  return byUseCase
+    .filter((route) => !userHasExcludedRole(userRoles, route.excludeRoleCodes))
+    .filter((route) => {
+      if (!route.requiresRoleCodes?.length) return true;
+      if (!userRoles?.length) return false;
+      const codes = new Set(userRoles.map((r) => r.code));
+      return route.requiresRoleCodes.some((c) => codes.has(c));
+    });
 };
 

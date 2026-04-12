@@ -36,16 +36,16 @@ export const DirectivesFeature = () => {
     {
       id: 'take',
       label: 'الأخذ بالتوجيه',
-      icon: <CheckSquare className="size-3" />,
-      className: 'bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 hover:scale-[1.03] active:scale-[0.97]',
+      icon: <CheckSquare className="size-3.5" />,
+      className: 'bg-gradient-to-l from-[#048F86] to-[#0BB5AA] text-white shadow-sm',
       hidden: (d: MinisterDirective) => d.scheduling_officer_status === 'CLOSED',
       onClick: (d: MinisterDirective) => setConfirmDirective(d),
     },
     {
       id: 'meeting',
       label: 'طلب إجتماع',
-      icon: <CalendarDays className="size-3" />,
-      className: 'bg-teal-500/10 border border-teal-500/30 text-teal-600 hover:bg-teal-500/20 hover:scale-[1.03] active:scale-[0.97]',
+      icon: <CalendarDays className="size-3.5" />,
+      className: 'border border-teal-400 text-teal-600 bg-white hover:bg-teal-50 dark:bg-transparent dark:hover:bg-teal-900/20',
       onClick: async (d: MinisterDirective) => {
         setSchedulerDirective({ directiveId: d.id, directiveText: d.title });
         setMeetingFormOpen(true);

@@ -157,6 +157,82 @@ export async function exchangeCodeForToken(
   return await response.json();
 }
 
+/**
+ * Calls backend `POST /api/auth/refresh`, which should proxy to IdP
+ * `{SSO_AUTHORITY_URL}/connect/token` with:
+ * - grant_type=refresh_token
+ * - refresh_token (from this request body)
+ * - client_id (from body; backend may default to SSO_CLIENT_ID if omitted — we send VITE_SSO_CLIENT_ID)
+ * - client_secret only on the server if configured (never in the SPA)
+ * - scope optional, forwarded if present
+ */
+export async function refreshAccessToken(): Promise<User | null> {
+  const currentUser = await userManager.getUser();
+  if (!currentUser?.refresh_token) return null;
+
+  const clientId = getEnv('VITE_SSO_CLIENT_ID', 'Outbalady.LegislationLibrary');
+  const backendRefreshEndpoint = `${EXECUTION_SYSTEM_BASE_URL}/api/auth/refresh`;
+
+  const formData = new URLSearchParams();
+  formData.set('grant_type', 'refresh_token');
+  formData.set('client_id', clientId);
+  formData.set('refresh_token', currentUser.refresh_token);
+  if (currentUser.scope) {
+    formData.set('scope', currentUser.scope);
+  }
+
+  const response = await fetch(backendRefreshEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+      ...getApiTimezoneHeaders(),
+    },
+    body: formData.toString(),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Backend refresh failed: ${response.status} ${errorText}`);
+  }
+
+  const tokenResponse = (await response.json()) as {
+    access_token: string;
+    id_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    token_type?: string;
+    scope?: string;
+    session_state?: string;
+  };
+
+  const expiresAt = tokenResponse.expires_in
+    ? Math.floor(Date.now() / 1000) + tokenResponse.expires_in
+    : currentUser.expires_at;
+
+  const profile = tokenResponse.id_token
+    ? (profileFromIdToken(tokenResponse.id_token) as unknown as User['profile'])
+    : currentUser.profile;
+
+  if (!profile.sub) profile.sub = '';
+
+  const refreshedUser = new User({
+    id_token: tokenResponse.id_token ?? currentUser.id_token ?? '',
+    access_token: tokenResponse.access_token,
+    refresh_token: tokenResponse.refresh_token ?? currentUser.refresh_token,
+    token_type: tokenResponse.token_type || currentUser.token_type || 'Bearer',
+    scope: tokenResponse.scope ?? currentUser.scope ?? '',
+    session_state: tokenResponse.session_state || currentUser.session_state || '',
+    profile,
+    expires_at: expiresAt,
+    userState: (currentUser as unknown as { userState?: unknown }).userState ?? '',
+  });
+
+  await userManager.storeUser(refreshedUser);
+  return refreshedUser;
+}
+
 export async function handleCallback(): Promise<CallbackResult | null> {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -171,8 +247,9 @@ export async function handleCallback(): Promise<CallbackResult | null> {
         state: stateFromUrl ?? undefined,
         code_verifier: codeVerifierFromStorage,
       }).then(async (tokenResponse) => {
+        // oidc-client-ts User.expires_at is Unix seconds (not ms).
         const expiresAt = tokenResponse.expires_in
-          ? Date.now() + tokenResponse.expires_in * 1000
+          ? Math.floor(Date.now() / 1000) + tokenResponse.expires_in
           : undefined;
         const profile = profileFromIdToken(tokenResponse.id_token) as unknown as User['profile'];
         if (!profile.sub) profile.sub = '';
@@ -236,7 +313,7 @@ export async function handleSilentRenew(): Promise<void> {
           code_verifier: codeVerifierFromStorage,
         });
         const expiresAt = tokenResponse.expires_in
-          ? Date.now() + tokenResponse.expires_in * 1000
+          ? Math.floor(Date.now() / 1000) + tokenResponse.expires_in
           : undefined;
         const profile = profileFromIdToken(tokenResponse.id_token) as unknown as User['profile'];
         if (!profile.sub) profile.sub = '';

@@ -576,8 +576,21 @@ export function useContentRequestDetailPage() {
     });
   }, [selectedConsultantId, consultationNotes, consultants, submitConsultationMutation]);
 
-  const handleSendToScheduling = useCallback(() => {
-    if (!hasDirectives) { toast.error('يرجى إضافة توجيه واحد على الأقل أولاً'); return; }
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
+
+  /* ── Computed ── */
+  const hasDirectives = useMemo(() => {
+    const apiCount = contentDirectives.length;
+    const existingCount = (contentRequest?.related_directives ?? [])
+      .filter(d => !deletedExistingDirectiveIds.has(String(d.id))).length;
+    const aiCount = aiDirectivesSuggestions.filter(d => aiDirectiveActions[d.id]).length;
+    const suggestedCount = suggestedActionsItems.filter(s => !deletedSuggestedActionIds.has(String(s.id))).length;
+    const manualCount = manualAddedActions.length;
+    return (apiCount + existingCount + aiCount + suggestedCount + manualCount) > 0;
+  }, [contentDirectives, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
+
+  const confirmSendToScheduling = useCallback(() => {
+    // if (!hasDirectives) { toast.error('يرجى إضافة توجيه واحد على الأقل أولاً'); return; }
     const relatedDirectives = (contentRequest as ContentRequestDetailResponse)?.related_directives ?? [];
     const existingObjs: DirectiveForApprove[] = relatedDirectives
       .filter((d) => !deletedExistingDirectiveIds.has(String(d.id)))
@@ -624,18 +637,12 @@ export function useContentRequestDetailPage() {
     }));
     const directivesToSend: DirectiveForApprove[] = [...apiObjs, ...existingObjs, ...aiObjs, ...suggestedObjs, ...manualObjs];
     sendToSchedulingMutation.mutate({ file: executiveSummaryFile, notes: guidanceNotes.trim(), directives: directivesToSend.length > 0 ? directivesToSend : undefined });
-  }, [executiveSummaryFile, contentRequest, contentDirectives, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
+  }, [hasDirectives, executiveSummaryFile, contentRequest, contentDirectives, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, editableAiDirectives, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions, manualActionEdits, guidanceNotes, sendToSchedulingMutation]);
 
-  /* ── Computed ── */
-  const hasDirectives = useMemo(() => {
-    const apiCount = contentDirectives.length;
-    const existingCount = (contentRequest?.related_directives ?? [])
-      .filter(d => !deletedExistingDirectiveIds.has(String(d.id))).length;
-    const aiCount = aiDirectivesSuggestions.filter(d => aiDirectiveActions[d.id]).length;
-    const suggestedCount = suggestedActionsItems.filter(s => !deletedSuggestedActionIds.has(String(s.id))).length;
-    const manualCount = manualAddedActions.length;
-    return (apiCount + existingCount + aiCount + suggestedCount + manualCount) > 0;
-  }, [contentDirectives, contentRequest, deletedExistingDirectiveIds, aiDirectivesSuggestions, aiDirectiveActions, suggestedActionsItems, deletedSuggestedActionIds, manualAddedActions]);
+  const handleSendToScheduling = useCallback(() => {
+    // if (!hasDirectives) { toast.error('يرجى إضافة توجيه واحد على الأقل أولاً'); return; }
+    setShowSendConfirm(true);
+  }, [hasDirectives]);
 
   const meetingStatus = (contentRequest?.status as MeetingStatus | string) || MeetingStatus.UNDER_REVIEW;
   const statusLabel = getStatusLabel(meetingStatus);
@@ -709,5 +716,6 @@ export function useContentRequestDetailPage() {
     fileInputRef, handleDragOver, handleDragLeave, handleDrop, handleFileSelect, handleRemoveFile,
     // Send to scheduling
     sendToSchedulingMutation, handleSendToScheduling, hasDirectives,
+    showSendConfirm, setShowSendConfirm, confirmSendToScheduling,
   };
 }

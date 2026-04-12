@@ -395,6 +395,7 @@ export interface CreateWebexMeetingResponse {
 }
 
 export interface EvaluateReadinessResponse {
+  readiness_percentage: number;
   readiness: string;
   reasoning: string[];
 }

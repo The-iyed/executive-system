@@ -46,48 +46,15 @@ export const loginApi = async (payload: LoginPayload): Promise<LoginResponse> =>
   return response.data;
 };
 
-/** Pretty-print for alerts (axios interceptor often rejects with `response.data` object only). */
-function stringifyForAlert(value: unknown): string {
-  if (value === null || value === undefined) return String(value);
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  if (value instanceof Error) return value.message || String(value);
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-}
-
-function formatMeRequestError(error: unknown): string {
-  const err = error as {
-    response?: { data?: unknown; status?: number };
-    message?: string;
-  };
-  // Full Axios error (if reject wasn’t normalized)
-  if (err?.response?.status != null) {
-    const status = err.response.status;
-    const body = err.response.data;
-    return `GET /api/auth/me failed (${status}):\n${stringifyForAlert(body)}`;
-  }
-  // auth/utils/axios rejects with `error.response.data` — often a plain object → was showing [object Object]
-  return `GET /api/auth/me failed:\n${stringifyForAlert(error)}`;
-}
-
 // Get current user API
 export const getCurrentUserApi = async (): Promise<User> => {
-  try {
-    const response = await axiosInstance.get<User | UserResponse>('/api/auth/me');
-    const raw = response.data;
-    const user = 'data' in raw && typeof raw.data === 'object' ? raw.data : (raw as User);
-    // Normalize is_registered (API may send is_registred)
-    const u = user as User & { is_registred?: boolean };
-    if (u && 'is_registred' in u && typeof u.is_registred === 'boolean') {
-      return { ...u, is_registered: u.is_registred } as User;
-    }
-    return user;
-  } catch (error) {
-    console.error(formatMeRequestError(error));
-    throw error;
+  const response = await axiosInstance.get<User | UserResponse>('/api/auth/me');
+  const raw = response.data;
+  const user = 'data' in raw && typeof raw.data === 'object' ? raw.data : (raw as User);
+  // Normalize is_registered (API may send is_registred)
+  const u = user as User & { is_registred?: boolean };
+  if (u && 'is_registred' in u && typeof u.is_registred === 'boolean') {
+    return { ...u, is_registered: u.is_registred } as User;
   }
+  return user;
 };
